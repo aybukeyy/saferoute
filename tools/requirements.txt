@@ -1,0 +1,11 @@
+# tools/extract_osm.py — Python deps.
+#
+# pyosmium ships a `osmium` Python package that wraps libosmium. It needs the
+# C++ library + Expat/zlib/etc on the system; on macOS the easiest path is
+#   brew install libosmium boost-build
+# before `pip install -r tools/requirements.txt`.
+osmium>=3.7,<4.0
+tqdm>=4.66,<5.0
+# Geohash is encoded inline (see _encode_geohash in extract_osm.py); listed
+# here only as an optional reference if you want to swap implementations.
+pygeohash>=1.2.0,<2.0

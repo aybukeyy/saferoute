@@ -1,0 +1,6 @@
+# Eval CSV outputs are produced per-run and are not committed.
+# A `.gitkeep` keeps the directory itself tracked so the path resolution in
+# `OutputDir.defaultHostPath()` doesn't have to create it on first run.
+*
+!.gitignore
+!.gitkeep

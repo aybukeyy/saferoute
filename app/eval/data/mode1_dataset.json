@@ -1,0 +1,436 @@
+{
+  "version": 1,
+  "targetAccuracy": 0.85,
+  "targetRubric": 0.90,
+  "targetLatencyMs": 5000,
+  "description": "30-row Mode 1 (Gemma 4 E2B classify+explain) eval set. Balanced TR (15) + EN (15). Categories: 6 violence, 7 theft, 6 harassment, 5 suspicious_activity, 3 vandalism, 3 other. Includes ambiguous, borderline, multi-category, and past-event edge cases. Coordinates are inside the Beşiktaş demo bbox (lat 41.040–41.050, lng 28.985–29.000) so geohash-7 cells overlap with mode2_cases.json. occurredAt timestamps are anchored to 2026-04-25; tests treat these as inputs only — the model should not depend on absolute time.",
+  "rubric": {
+    "neutral": "no alarming words: dangerous, scary, avoid, dikkat, sakın, tehlikeli, korkunç, kaçın",
+    "factual": "describes what likely happened, no speculation past the report",
+    "noAdvice": "no imperative or recommendation to the reader",
+    "noSecondPerson": "no you/your/yourself/sen/seni/sana/siz/sizi",
+    "maxWords": 25
+  },
+  "rows": [
+    {
+      "id": "tr-001",
+      "lang": "tr",
+      "text": "Akaretler'de gece 23:00 sıralarında iki kişi bana yaklaştı, telefonumu istediler.",
+      "lat": 41.0451,
+      "lng": 28.9912,
+      "occurredAt": "2026-04-25T20:00:00Z",
+      "expected": {
+        "category": "theft",
+        "riskLevel": "high",
+        "timeSensitive": true
+      },
+      "notes": "Snatching attempt, recent night-time, active threat."
+    },
+    {
+      "id": "tr-002",
+      "lang": "tr",
+      "text": "Barbaros Bulvarı'nda otobüs durağında biri çantamı yırtmaya çalıştı, sonra koşarak kaçtı.",
+      "lat": 41.0468,
+      "lng": 28.9931,
+      "occurredAt": "2026-04-25T18:30:00Z",
+      "expected": {
+        "category": "theft",
+        "riskLevel": "high",
+        "timeSensitive": true
+      },
+      "notes": "Bag-snatching, perpetrator fled."
+    },
+    {
+      "id": "tr-003",
+      "lang": "tr",
+      "text": "Beşiktaş iskelesinde cebimden cüzdanımı çaldılar, kalabalıkta fark etmedim.",
+      "lat": 41.0414,
+      "lng": 29.0061,
+      "occurredAt": "2026-04-25T17:15:00Z",
+      "expected": {
+        "category": "theft",
+        "riskLevel": "medium",
+        "timeSensitive": false
+      },
+      "notes": "Pickpocketing, no physical contact, daytime."
+    },
+    {
+      "id": "tr-004",
+      "lang": "tr",
+      "text": "Sokağa park ettiğim bisikletim çalınmış, kilit kesilmiş.",
+      "lat": 41.0432,
+      "lng": 28.9888,
+      "occurredAt": "2026-04-25T08:00:00Z",
+      "expected": {
+        "category": "theft",
+        "riskLevel": "low",
+        "timeSensitive": false
+      },
+      "notes": "Bisiklet hırsızlığı, fail belirsiz, geçmiş olay."
+    },
+    {
+      "id": "tr-005",
+      "lang": "tr",
+      "text": "İki adam sokakta birini yumrukladı, kavga çıktı, biri yere düştü.",
+      "lat": 41.0445,
+      "lng": 28.9905,
+      "occurredAt": "2026-04-25T22:10:00Z",
+      "expected": {
+        "category": "violence",
+        "riskLevel": "high",
+        "timeSensitive": true
+      },
+      "notes": "Physical assault, recent."
+    },
+    {
+      "id": "tr-006",
+      "lang": "tr",
+      "text": "Akşam saatlerinde bir grup tartıştı, biri bıçak çekti ama kullanmadı, polis geldi.",
+      "lat": 41.0457,
+      "lng": 28.9920,
+      "occurredAt": "2026-04-25T19:00:00Z",
+      "expected": {
+        "category": "violence",
+        "riskLevel": "high",
+        "timeSensitive": true
+      },
+      "notes": "Weapon brandished, escalated."
+    },
+    {
+      "id": "tr-007-edge-other",
+      "lang": "tr",
+      "text": "Sokakta cüzdanımı düşürmüşüm, sabah aradığımda bulamadım.",
+      "lat": 41.0440,
+      "lng": 28.9897,
+      "occurredAt": "2026-04-25T08:30:00Z",
+      "expected": {
+        "category": "other",
+        "riskLevel": "low",
+        "timeSensitive": false
+      },
+      "notes": "Edge case: kayıp eşya — kimse çalmadı, sadece düşürdüm. Hırsızlık değil."
+    },
+    {
+      "id": "tr-008",
+      "lang": "tr",
+      "text": "Eve dönerken bir adam beni iki sokak boyunca takip etti, dönüp baktığımda saklandı.",
+      "lat": 41.0461,
+      "lng": 28.9942,
+      "occurredAt": "2026-04-25T21:45:00Z",
+      "expected": {
+        "category": "harassment",
+        "riskLevel": "high",
+        "timeSensitive": true
+      },
+      "notes": "Stalking/following, recent night-time."
+    },
+    {
+      "id": "tr-009",
+      "lang": "tr",
+      "text": "Yolda yürürken birkaç kişi laf attı, küfürlü sözler söylediler.",
+      "lat": 41.0436,
+      "lng": 28.9885,
+      "occurredAt": "2026-04-25T16:20:00Z",
+      "expected": {
+        "category": "harassment",
+        "riskLevel": "medium",
+        "timeSensitive": false
+      },
+      "notes": "Catcalling, daytime."
+    },
+    {
+      "id": "tr-010",
+      "lang": "tr",
+      "text": "Bir adam yanıma geldi, tehditkar bir tonda 'buradan geçme' dedi.",
+      "lat": 41.0449,
+      "lng": 28.9915,
+      "occurredAt": "2026-04-25T22:30:00Z",
+      "expected": {
+        "category": "harassment",
+        "riskLevel": "high",
+        "timeSensitive": true
+      },
+      "notes": "Intimidation, verbal threat, recent night."
+    },
+    {
+      "id": "tr-011",
+      "lang": "tr",
+      "text": "Gece yarısı sokakta yedi-sekiz kişilik bir grup yüksek sesle dolaşıyor, kapıları çalıyorlar.",
+      "lat": 41.0455,
+      "lng": 28.9925,
+      "occurredAt": "2026-04-25T23:50:00Z",
+      "expected": {
+        "category": "suspicious_activity",
+        "riskLevel": "medium",
+        "timeSensitive": true
+      },
+      "notes": "Gece dolaşan grup, doğrudan tehdit yok."
+    },
+    {
+      "id": "tr-012",
+      "lang": "tr",
+      "text": "Park edilmiş siyah bir araç saatlerdir aynı yerde duruyor, içinde iki kişi etrafa bakınıyor.",
+      "lat": 41.0442,
+      "lng": 28.9902,
+      "occurredAt": "2026-04-25T15:00:00Z",
+      "expected": {
+        "category": "suspicious_activity",
+        "riskLevel": "low",
+        "timeSensitive": false
+      },
+      "notes": "Şüpheli araç, henüz olay yok."
+    },
+    {
+      "id": "tr-013",
+      "lang": "tr",
+      "text": "Apartman girişinde maskeli bir adam beklerken gördüm, beni görünce hızla uzaklaştı.",
+      "lat": 41.0448,
+      "lng": 28.9918,
+      "occurredAt": "2026-04-25T22:00:00Z",
+      "expected": {
+        "category": "suspicious_activity",
+        "riskLevel": "medium",
+        "timeSensitive": true
+      },
+      "notes": "Şüpheli kişi, gece, kaçtı."
+    },
+    {
+      "id": "tr-014",
+      "lang": "tr",
+      "text": "Sokak duvarlarına ve dükkan kepenklerine geceleyin spreyle yazılar yazılmış.",
+      "lat": 41.0438,
+      "lng": 28.9892,
+      "occurredAt": "2026-04-25T07:00:00Z",
+      "expected": {
+        "category": "vandalism",
+        "riskLevel": "low",
+        "timeSensitive": false
+      },
+      "notes": "Graffiti."
+    },
+    {
+      "id": "tr-015",
+      "lang": "tr",
+      "text": "Park bankları parçalanmış, çöp kutusu devrilmiş, etrafa cam parçaları saçılmış.",
+      "lat": 41.0444,
+      "lng": 28.9908,
+      "occurredAt": "2026-04-25T09:00:00Z",
+      "expected": {
+        "category": "vandalism",
+        "riskLevel": "medium",
+        "timeSensitive": false
+      },
+      "notes": "Property damage in public park."
+    },
+    {
+      "id": "en-001",
+      "lang": "en",
+      "text": "Around 11pm two men approached me near Akaretler and demanded my phone.",
+      "lat": 41.0451,
+      "lng": 28.9912,
+      "occurredAt": "2026-04-25T20:00:00Z",
+      "expected": {
+        "category": "theft",
+        "riskLevel": "high",
+        "timeSensitive": true
+      },
+      "notes": "Mirror of tr-001 in English."
+    },
+    {
+      "id": "en-002",
+      "lang": "en",
+      "text": "Someone snatched my bag at the bus stop on Barbaros Boulevard and ran off.",
+      "lat": 41.0468,
+      "lng": 28.9931,
+      "occurredAt": "2026-04-25T18:30:00Z",
+      "expected": {
+        "category": "theft",
+        "riskLevel": "high",
+        "timeSensitive": true
+      },
+      "notes": "Bag-snatching, recent."
+    },
+    {
+      "id": "en-003",
+      "lang": "en",
+      "text": "Two cars pulled up, men jumped out and forced the driver out, then drove off in the car.",
+      "lat": 41.0463,
+      "lng": 28.9928,
+      "occurredAt": "2026-04-25T19:30:00Z",
+      "expected": {
+        "category": "theft",
+        "riskLevel": "high",
+        "timeSensitive": true
+      },
+      "notes": "Carjacking — theft involving force; primary intent is taking the vehicle."
+    },
+    {
+      "id": "en-004",
+      "lang": "en",
+      "text": "A man punched another man outside a cafe, the victim is on the ground bleeding.",
+      "lat": 41.0445,
+      "lng": 28.9905,
+      "occurredAt": "2026-04-25T22:10:00Z",
+      "expected": {
+        "category": "violence",
+        "riskLevel": "high",
+        "timeSensitive": true
+      },
+      "notes": "Active assault with injury."
+    },
+    {
+      "id": "en-005",
+      "lang": "en",
+      "text": "Two groups got into a shoving match earlier this afternoon, broke up before police arrived.",
+      "lat": 41.0454,
+      "lng": 28.9921,
+      "occurredAt": "2026-04-25T14:00:00Z",
+      "expected": {
+        "category": "violence",
+        "riskLevel": "medium",
+        "timeSensitive": false
+      },
+      "notes": "Past scuffle, no weapons, no current danger."
+    },
+    {
+      "id": "en-006",
+      "lang": "en",
+      "text": "There was a brawl on this street last week, somebody got hurt.",
+      "lat": 41.0440,
+      "lng": 28.9897,
+      "occurredAt": "2026-04-18T22:00:00Z",
+      "expected": {
+        "category": "violence",
+        "riskLevel": "low",
+        "timeSensitive": false
+      },
+      "notes": "Past event, low time-sensitivity."
+    },
+    {
+      "id": "en-007",
+      "lang": "en",
+      "text": "A man followed me for two blocks tonight, hid behind a wall when I turned around.",
+      "lat": 41.0461,
+      "lng": 28.9942,
+      "occurredAt": "2026-04-25T21:45:00Z",
+      "expected": {
+        "category": "harassment",
+        "riskLevel": "high",
+        "timeSensitive": true
+      },
+      "notes": "Stalking, recent."
+    },
+    {
+      "id": "en-008",
+      "lang": "en",
+      "text": "Group of guys catcalled me near the ferry stop in the afternoon.",
+      "lat": 41.0414,
+      "lng": 29.0061,
+      "occurredAt": "2026-04-25T16:20:00Z",
+      "expected": {
+        "category": "harassment",
+        "riskLevel": "medium",
+        "timeSensitive": false
+      },
+      "notes": "Catcalling, daytime, public area."
+    },
+    {
+      "id": "en-009",
+      "lang": "en",
+      "text": "A man stood very close, blocked my path and told me not to come back here.",
+      "lat": 41.0449,
+      "lng": 28.9915,
+      "occurredAt": "2026-04-25T22:30:00Z",
+      "expected": {
+        "category": "harassment",
+        "riskLevel": "high",
+        "timeSensitive": true
+      },
+      "notes": "Intimidation."
+    },
+    {
+      "id": "en-010",
+      "lang": "en",
+      "text": "Around midnight a group of about eight people roamed the street loudly knocking on doors.",
+      "lat": 41.0455,
+      "lng": 28.9925,
+      "occurredAt": "2026-04-25T23:50:00Z",
+      "expected": {
+        "category": "suspicious_activity",
+        "riskLevel": "medium",
+        "timeSensitive": true
+      },
+      "notes": "Late-night roaming group."
+    },
+    {
+      "id": "en-011",
+      "lang": "en",
+      "text": "A black car has been parked here for hours with two people just watching the street.",
+      "lat": 41.0442,
+      "lng": 28.9902,
+      "occurredAt": "2026-04-25T15:00:00Z",
+      "expected": {
+        "category": "suspicious_activity",
+        "riskLevel": "low",
+        "timeSensitive": false
+      },
+      "notes": "Suspicious vehicle."
+    },
+    {
+      "id": "en-012",
+      "lang": "en",
+      "text": "Storefront shutters and a wall on this street were spray-painted overnight.",
+      "lat": 41.0438,
+      "lng": 28.9892,
+      "occurredAt": "2026-04-25T07:00:00Z",
+      "expected": {
+        "category": "vandalism",
+        "riskLevel": "low",
+        "timeSensitive": false
+      },
+      "notes": "Graffiti."
+    },
+    {
+      "id": "en-013-edge-ambiguous",
+      "lang": "en",
+      "text": "A group of teenagers were talking very loudly outside the cafe, it was annoying.",
+      "lat": 41.0434,
+      "lng": 28.9889,
+      "occurredAt": "2026-04-25T20:30:00Z",
+      "expected": {
+        "category": "other",
+        "riskLevel": "low",
+        "timeSensitive": false
+      },
+      "notes": "Edge case: annoyance is not harassment per the locked schema (no following / catcalling / intimidation)."
+    },
+    {
+      "id": "en-014-edge-borderline",
+      "lang": "en",
+      "text": "A man was sleeping on a bench in the park.",
+      "lat": 41.0444,
+      "lng": 28.9908,
+      "occurredAt": "2026-04-25T11:00:00Z",
+      "expected": {
+        "category": "other",
+        "riskLevel": "low",
+        "timeSensitive": false
+      },
+      "notes": "Borderline: presence of an unhoused person is not a threat. Must not classify as suspicious_activity."
+    },
+    {
+      "id": "en-015-edge-multi",
+      "lang": "en",
+      "text": "Someone stole a pedestrian's phone and then shoved them to the ground.",
+      "lat": 41.0451,
+      "lng": 28.9912,
+      "occurredAt": "2026-04-25T22:45:00Z",
+      "expected": {
+        "category": "violence",
+        "riskLevel": "high",
+        "timeSensitive": true
+      },
+      "notes": "Multi-category: theft + violence; physical harm makes violence the primary label per locked schema rule."
+    }
+  ]
+}

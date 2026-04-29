@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "models": {
+    "gemma-4-e2b": {
+      "url": "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm",
+      "filename": "gemma-4-e2b.litertlm",
+      "sizeBytes": 2583085056,
+      "sha256": null,
+      "displayName": "Gemma 4 E2B (classification)",
+      "approximateMb": 2463
+    },
+    "gemma-4-e4b": {
+      "url": "https://huggingface.co/litert-community/gemma-4-E4B-it-litert-lm/resolve/main/gemma-4-E4B-it.litertlm",
+      "filename": "gemma-4-e4b.litertlm",
+      "sizeBytes": 3654467584,
+      "sha256": null,
+      "displayName": "Gemma 4 E4B (area summary)",
+      "approximateMb": 3485
+    }
+  }
+}

@@ -1,0 +1,280 @@
+{
+  "version": 1,
+  "targetRubric": 0.90,
+  "targetLatencyMs": 8000,
+  "description": "10 Mode 2 (Gemma 4 E4B summarizeCell) eval cases. Each case is a single geohash-7 cell with 3–7 recent reports drawn from mode1_dataset.json categories. Cells `sxk9pq2` and `sxk9pq3` repeat (hot cells) so the eval surfaces stability of summaries across overlapping evidence. Geohash strings are illustrative — the integration test passes them verbatim to summarizeCell(geohash7,...); they are not re-derived from coordinates. Rubric matches the Mode 2 prompt rules in IMPLEMENTATION.md §3: ONE sentence, max 20 words, no alarming words, no advice, no second-person.",
+  "rubric": {
+    "neutral": "no alarming words: dangerous, scary, avoid, threat, beware, dikkat, sakın, tehlikeli, korkunç, kaçın",
+    "noAdvice": "no imperative or recommendation (be careful / stay away / dikkat et / kaçın)",
+    "noSecondPerson": "no you/your/yourself/sen/seni/sana/siz/sizi",
+    "maxWords": 20,
+    "singleSentence": "exactly one sentence (counted by terminal . ? !)"
+  },
+  "cases": [
+    {
+      "id": "cell-hot-akaretler-night",
+      "geohash7": "sxk9pq2",
+      "hours": 12,
+      "night": true,
+      "reports": [
+        {
+          "category": "theft",
+          "level": "high",
+          "text": "Around 11pm two men approached me near Akaretler and demanded my phone."
+        },
+        {
+          "category": "theft",
+          "level": "high",
+          "text": "Someone snatched my bag at the bus stop on Barbaros Boulevard and ran off."
+        },
+        {
+          "category": "harassment",
+          "level": "high",
+          "text": "A man followed me for two blocks tonight."
+        },
+        {
+          "category": "violence",
+          "level": "high",
+          "text": "A man punched another man outside a cafe, the victim is on the ground."
+        }
+      ],
+      "notes": "Hot cell, busy night, mixed but all serious — summary should mention theft + violence + night context."
+    },
+    {
+      "id": "cell-hot-akaretler-day",
+      "geohash7": "sxk9pq2",
+      "hours": 24,
+      "night": false,
+      "reports": [
+        {
+          "category": "theft",
+          "level": "medium",
+          "text": "Pickpocketed at the ferry stop in the afternoon."
+        },
+        {
+          "category": "harassment",
+          "level": "medium",
+          "text": "Catcalled near the cafe in daylight."
+        },
+        {
+          "category": "vandalism",
+          "level": "low",
+          "text": "Storefront shutters were spray-painted overnight."
+        }
+      ],
+      "notes": "Same hot cell, 24h window, different mix — daytime context, lower severity."
+    },
+    {
+      "id": "cell-hot-barbaros-night",
+      "geohash7": "sxk9pq3",
+      "hours": 12,
+      "night": true,
+      "reports": [
+        {
+          "category": "violence",
+          "level": "high",
+          "text": "Two adults fighting outside a cafe, weapons brandished."
+        },
+        {
+          "category": "theft",
+          "level": "high",
+          "text": "Bag snatched from a pedestrian near the bus stop."
+        },
+        {
+          "category": "harassment",
+          "level": "high",
+          "text": "Man blocked someone's path and made threats."
+        },
+        {
+          "category": "suspicious_activity",
+          "level": "medium",
+          "text": "Group of eight people roamed the street loudly knocking on doors."
+        },
+        {
+          "category": "theft",
+          "level": "high",
+          "text": "Carjacking near the corner just before midnight."
+        }
+      ],
+      "notes": "Hot cell, 5 reports, multi-category, all night-time."
+    },
+    {
+      "id": "cell-hot-barbaros-day-quiet",
+      "geohash7": "sxk9pq3",
+      "hours": 12,
+      "night": false,
+      "reports": [
+        {
+          "category": "vandalism",
+          "level": "low",
+          "text": "Park bench broken and trash bin tipped over."
+        },
+        {
+          "category": "other",
+          "level": "low",
+          "text": "Lost a wallet on the sidewalk this morning."
+        },
+        {
+          "category": "suspicious_activity",
+          "level": "low",
+          "text": "A black car has been parked watching the street for hours."
+        }
+      ],
+      "notes": "Same hot cell, daytime, all low-severity — summary should reflect mixed/sparse honestly per prompt rule."
+    },
+    {
+      "id": "cell-iskele-day-mixed",
+      "geohash7": "sxk9pqd",
+      "hours": 24,
+      "night": false,
+      "reports": [
+        {
+          "category": "theft",
+          "level": "medium",
+          "text": "Pickpocketed in the crowd at the ferry pier."
+        },
+        {
+          "category": "harassment",
+          "level": "medium",
+          "text": "Catcalled by a group near the ferry stop."
+        },
+        {
+          "category": "suspicious_activity",
+          "level": "low",
+          "text": "Same vehicle parked watching the entrance multiple times."
+        }
+      ],
+      "notes": "Transit hub, 24h, daytime."
+    },
+    {
+      "id": "cell-yildiz-night-suspicious",
+      "geohash7": "sxk9pqe",
+      "hours": 12,
+      "night": true,
+      "reports": [
+        {
+          "category": "suspicious_activity",
+          "level": "medium",
+          "text": "Eight people roaming late at night, knocking on doors."
+        },
+        {
+          "category": "suspicious_activity",
+          "level": "medium",
+          "text": "A masked man waited at the apartment entrance and fled when seen."
+        },
+        {
+          "category": "harassment",
+          "level": "high",
+          "text": "Followed for two blocks, perpetrator hid when looked at."
+        }
+      ],
+      "notes": "Suspicious-activity dominant cell, night."
+    },
+    {
+      "id": "cell-vandalism-only",
+      "geohash7": "sxk9pqf",
+      "hours": 24,
+      "night": false,
+      "reports": [
+        {
+          "category": "vandalism",
+          "level": "low",
+          "text": "Walls and shutters spray-painted overnight."
+        },
+        {
+          "category": "vandalism",
+          "level": "medium",
+          "text": "Park benches broken, glass on the ground."
+        },
+        {
+          "category": "vandalism",
+          "level": "low",
+          "text": "Bus stop sign defaced."
+        }
+      ],
+      "notes": "Single-category cell — summary should be specific (vandalism only)."
+    },
+    {
+      "id": "cell-sparse",
+      "geohash7": "sxk9pqg",
+      "hours": 24,
+      "night": false,
+      "reports": [
+        {
+          "category": "other",
+          "level": "low",
+          "text": "Loud teenagers outside a cafe, just annoying."
+        },
+        {
+          "category": "other",
+          "level": "low",
+          "text": "Someone sleeping on a park bench at midday."
+        }
+      ],
+      "notes": "Sparse / non-threat reports — summary must say so honestly per prompt rule."
+    },
+    {
+      "id": "cell-past-event",
+      "geohash7": "sxk9pqh",
+      "hours": 24,
+      "night": false,
+      "reports": [
+        {
+          "category": "theft",
+          "level": "low",
+          "text": "Bicycle theft a week ago, lock cut."
+        },
+        {
+          "category": "violence",
+          "level": "low",
+          "text": "Hearsay about a fight on this street last month."
+        }
+      ],
+      "notes": "Mostly past events — summary should not exaggerate current risk."
+    },
+    {
+      "id": "cell-large-window",
+      "geohash7": "sxk9pqj",
+      "hours": 24,
+      "night": true,
+      "reports": [
+        {
+          "category": "theft",
+          "level": "high",
+          "text": "Phone snatched at the corner around 11pm."
+        },
+        {
+          "category": "violence",
+          "level": "high",
+          "text": "Shoving match outside a venue, one person hurt."
+        },
+        {
+          "category": "harassment",
+          "level": "medium",
+          "text": "Street catcalling in early evening."
+        },
+        {
+          "category": "suspicious_activity",
+          "level": "low",
+          "text": "Vehicle loitering near the entrance."
+        },
+        {
+          "category": "vandalism",
+          "level": "low",
+          "text": "Graffiti on a storefront."
+        },
+        {
+          "category": "theft",
+          "level": "medium",
+          "text": "Pickpocketing in the bus crowd."
+        },
+        {
+          "category": "harassment",
+          "level": "high",
+          "text": "Stalking incident reported tonight."
+        }
+      ],
+      "notes": "Largest case (7 reports), 24h, full mix — stress-test the summariser's brevity rule."
+    }
+  ]
+}

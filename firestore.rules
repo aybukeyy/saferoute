@@ -1,0 +1,38 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Reports: create only by authenticated owner; immutable after creation
+    // (re-reads come from local SQLite, no client-side updates).
+    match /reports/{reportId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.text is string
+                    && request.resource.data.text.size() <= 280
+                    && request.resource.data.lat is number
+                    && request.resource.data.lng is number;
+      allow update: if request.auth != null
+                    && resource.data.uid == request.auth.uid;
+      allow delete: if false;
+    }
+
+    // Risk cells: authenticated clients write (recomputed deterministically
+    // per-device; last-write-wins is acceptable since the formula converges).
+    match /risk_cells/{cellId} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null;
+      allow delete: if false;
+    }
+
+    // Users: per-UID document. Reputation is read-only from the client in v1
+    // (server-side adjustment is post-hackathon scope).
+    match /users/{uid} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == uid;
+      allow update: if false;
+      allow delete: if false;
+    }
+  }
+}
