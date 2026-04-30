@@ -61,4 +61,5 @@ const _$ReportStatusEnumMap = {
   ReportStatus.pending: 'PENDING',
   ReportStatus.classified: 'CLASSIFIED',
   ReportStatus.rejected: 'REJECTED',
+  ReportStatus.failed: 'FAILED',
 };

@@ -255,6 +255,7 @@ String _statusWire(ReportStatus s) => switch (s) {
       ReportStatus.pending => 'PENDING',
       ReportStatus.classified => 'CLASSIFIED',
       ReportStatus.rejected => 'REJECTED',
+      ReportStatus.failed => 'FAILED',
     };
 
 /// Riverpod provider — async because Firebase init is async. The UI shows a

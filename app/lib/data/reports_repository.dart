@@ -68,6 +68,11 @@ class ReportsRepository {
   /// once a row reaches a terminal status (CLASSIFIED or REJECTED).
   final Map<String, StreamController<Report>> _watchers = {};
 
+  /// Broadcast stream of newly-inserted PENDING rows. Drives the
+  /// classification worker.
+  final StreamController<Report> _pendingController =
+      StreamController<Report>.broadcast();
+
   ReportsRepository({
     required LocalDb db,
     required SyncService sync,
@@ -152,8 +157,11 @@ class ReportsRepository {
       //    disabled, this is a no-op.
       unawaited(_sync.mirrorReport(report));
 
-      // 5) Notify any in-flight `watchReport` callers.
+      // 5) Notify any in-flight `watchReport` callers + the pending worker.
       _emit(report);
+      if (!_pendingController.isClosed) {
+        _pendingController.add(report);
+      }
 
       return Ok(report);
     } catch (e, st) {
@@ -175,6 +183,23 @@ class ReportsRepository {
       if (row != null) controller.add(row);
     }();
     return controller.stream;
+  }
+
+  /// Newly-inserted PENDING reports. Subscribed to by the classification
+  /// worker; existing PENDING rows on disk are surfaced via [pendingReports].
+  Stream<Report> watchPending() => _pendingController.stream;
+
+  /// All reports currently in PENDING status, oldest first so the worker
+  /// drains them in submission order on boot.
+  Future<List<Report>> pendingReports() async {
+    final db = await _db.db;
+    final rows = await db.query(
+      'reports',
+      where: 'status = ?',
+      whereArgs: [_statusWire(ReportStatus.pending)],
+      orderBy: 'created_at ASC',
+    );
+    return rows.map(_reportFromRow).toList(growable: false);
   }
 
   /// Most recent reports across all users, newest first.
@@ -246,6 +271,23 @@ class ReportsRepository {
     }
 
     unawaited(_sync.mirrorReport(updated));
+    _emit(updated);
+    _maybeCloseWatcher(updated);
+  }
+
+  /// Records that classification threw before producing a [Classification].
+  /// FAILED rows are terminal — they never re-enter the worker queue and are
+  /// not mirrored to Firestore.
+  Future<void> markClassificationFailed(String id) async {
+    final db = await _db.db;
+    await db.update(
+      'reports',
+      {'status': _statusWire(ReportStatus.failed)},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    final updated = await _findById(id);
+    if (updated == null) return;
     _emit(updated);
     _maybeCloseWatcher(updated);
   }
@@ -402,6 +444,7 @@ String _statusWire(ReportStatus s) => switch (s) {
       ReportStatus.pending => 'PENDING',
       ReportStatus.classified => 'CLASSIFIED',
       ReportStatus.rejected => 'REJECTED',
+      ReportStatus.failed => 'FAILED',
     };
 
 ReportStatus? _decodeStatus(String? raw) {
@@ -412,6 +455,8 @@ ReportStatus? _decodeStatus(String? raw) {
       return ReportStatus.classified;
     case 'REJECTED':
       return ReportStatus.rejected;
+    case 'FAILED':
+      return ReportStatus.failed;
     default:
       return null;
   }

@@ -25,6 +25,7 @@ import 'ai/model_storage.dart';
 import 'app/real_providers.dart';
 import 'app/router.dart';
 import 'app/theme.dart';
+import 'data/classification_worker.dart';
 import 'data/local_db.dart';
 import 'data/seed_loader.dart';
 import 'data/sync_service.dart' as data;
@@ -124,6 +125,16 @@ Future<void> main() async {
           'onboarding banner will surface.');
     } catch (e) {
       debugPrint('[main] Gemma warm-up failed (continuing): $e');
+    }
+  }());
+
+  // Step 7 — Boot the classification worker. PENDING rows that exist on
+  // disk get drained, future submissions stream in via watchPending().
+  unawaited(() async {
+    try {
+      await container.read(classificationWorkerProvider.future);
+    } catch (e, st) {
+      debugPrint('[main] classification worker boot failed: $e\n$st');
     }
   }());
 

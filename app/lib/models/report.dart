@@ -36,6 +36,7 @@ enum RiskLevel {
 /// Pending  -> just submitted, not yet classified.
 /// Classified -> Gemma populated category/risk/explanation.
 /// Rejected -> safety override (e.g. parser failed twice; needs review).
+/// Failed -> classification threw before producing a result.
 enum ReportStatus {
   @JsonValue('PENDING')
   pending,
@@ -43,6 +44,8 @@ enum ReportStatus {
   classified,
   @JsonValue('REJECTED')
   rejected,
+  @JsonValue('FAILED')
+  failed,
 }
 
 @freezed
