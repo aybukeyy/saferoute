@@ -1,38 +1,112 @@
 rules_version = '2';
 
+// Deploy: firebase deploy --only firestore:rules
+//
+// Rate-limit backstop: Firestore Security Rules cannot run aggregation
+// queries, so the server cannot count "reports per UID per hour" directly.
+// We enforce a coarse minimum interval of >= 12s between report creates per
+// UID by reading the caller's users/{uid} doc and comparing
+// request.time to its lastReportAt field. 12s = 720s/5, the per-write
+// budget that yields 5 reports/hour. This is a backstop, not a precise
+// limit. The Dart client (app/lib/data/reports_repository.dart) still owns
+// the precise 5/hour and 20/day enforcement; the server only blocks the
+// pathological case of a client bypass that floods within seconds. Clients
+// must transactionally update users/{uid}.lastReportAt = request.time on
+// every report create for the backstop to work.
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Reports: create only by authenticated owner; immutable after creation
-    // (re-reads come from local SQLite, no client-side updates).
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function userDocExists() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    // Allowed-to-change set on report updates: classification + status only.
+    // Identity / location / authored content are immutable.
+    function reportUpdateOnlyMutatesAllowed() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+        .hasOnly(['status', 'category', 'riskLevel', 'confidence', 'explanation', 'pulse']);
+    }
+
+    function reportCreatePayloadValid() {
+      let d = request.resource.data;
+      return d.uid is string
+          && d.uid == request.auth.uid
+          && d.text is string && d.text.size() >= 1 && d.text.size() <= 500
+          && d.geohash7 is string && d.geohash7.size() == 7
+          && d.lat is number && d.lat >= -90 && d.lat <= 90
+          && d.lng is number && d.lng >= -180 && d.lng <= 180
+          && d.status is string
+          && d.createdAt is timestamp
+          && d.createdAt == request.time;
+    }
+
+    function rateLimitOk() {
+      // First report ever for this UID: users doc may not exist yet — allow.
+      // Otherwise require >= 12s since lastReportAt.
+      return !userDocExists()
+          || !('lastReportAt' in userDoc())
+          || userDoc().lastReportAt is timestamp
+             && request.time > userDoc().lastReportAt + duration.value(12, 's');
+    }
+
     match /reports/{reportId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null
-                    && request.resource.data.uid == request.auth.uid
-                    && request.resource.data.text is string
-                    && request.resource.data.text.size() <= 280
-                    && request.resource.data.lat is number
-                    && request.resource.data.lng is number;
-      allow update: if request.auth != null
-                    && resource.data.uid == request.auth.uid;
+      allow read: if true;
+
+      allow create: if isSignedIn()
+                    && reportCreatePayloadValid()
+                    && rateLimitOk();
+
+      allow update: if isSignedIn()
+                    && resource.data.uid == request.auth.uid
+                    && reportUpdateOnlyMutatesAllowed();
+
       allow delete: if false;
     }
 
-    // Risk cells: authenticated clients write (recomputed deterministically
-    // per-device; last-write-wins is acceptable since the formula converges).
     match /risk_cells/{cellId} {
-      allow read: if request.auth != null;
-      allow create, update: if request.auth != null;
+      allow read: if true;
+
+      allow create, update: if isSignedIn()
+        && (!('pulse' in request.resource.data) || request.resource.data.pulse is bool)
+        && (!('score' in request.resource.data) || request.resource.data.score is number)
+        && (!('reportCount' in request.resource.data) || request.resource.data.reportCount is number)
+        && (!('topCategory' in request.resource.data) || request.resource.data.topCategory == null || request.resource.data.topCategory is string)
+        && (!('summary' in request.resource.data) || request.resource.data.summary == null || request.resource.data.summary is string);
+
       allow delete: if false;
     }
 
-    // Users: per-UID document. Reputation is read-only from the client in v1
-    // (server-side adjustment is post-hackathon scope).
     match /users/{uid} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null && request.auth.uid == uid;
-      allow update: if false;
+      allow read: if true;
+
+      allow create, update: if isOwner(uid)
+        && (!('reputation' in request.resource.data)
+            || (request.resource.data.reputation is number
+                && request.resource.data.reputation >= 0
+                && request.resource.data.reputation <= 1.5))
+        && (!('lastReportAt' in request.resource.data)
+            || request.resource.data.lastReportAt is timestamp)
+        && (!('reportsThisHour' in request.resource.data)
+            || request.resource.data.reportsThisHour is number);
+
       allow delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
