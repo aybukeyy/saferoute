@@ -39,6 +39,8 @@ import 'package:path_provider/path_provider.dart';
 // Manifest types — the parsed shape of `assets/model_config.json`.
 // ---------------------------------------------------------------------------
 
+const String _kPlaceholderSentinel = '<placeholder>';
+
 /// One model entry in the manifest. URL + filename + integrity metadata.
 @immutable
 class ModelConfig {
@@ -77,8 +79,8 @@ class ModelConfig {
   /// `true` if either URL or sha256 is still the placeholder. Callers can
   /// short-circuit a download attempt rather than hit a 404.
   bool get isPlaceholder =>
-      url.contains('TODO_REPLACED_BY_AGENT_B') ||
-      sha256.contains('TODO_REPLACED_BY_AGENT_B');
+      url.contains(_kPlaceholderSentinel) ||
+      sha256.contains(_kPlaceholderSentinel);
 
   /// `true` if a meaningful sha256 is present (32-byte hex, 64 chars).
   bool get hasSha256 => sha256.length == 64 && !isPlaceholder;

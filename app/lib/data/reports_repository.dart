@@ -73,6 +73,11 @@ class ReportsRepository {
   final StreamController<Report> _pendingController =
       StreamController<Report>.broadcast();
 
+  /// Broadcast stream of UIDs we've just touched (typically via
+  /// submitReport's idempotent users-row upsert). Consumers dedupe.
+  final StreamController<String> _uidController =
+      StreamController<String>.broadcast();
+
   ReportsRepository({
     required LocalDb db,
     required SyncService sync,
@@ -162,6 +167,9 @@ class ReportsRepository {
       if (!_pendingController.isClosed) {
         _pendingController.add(report);
       }
+      if (!_uidController.isClosed) {
+        _uidController.add(uid);
+      }
 
       return Ok(report);
     } catch (e, st) {
@@ -188,6 +196,10 @@ class ReportsRepository {
   /// Newly-inserted PENDING reports. Subscribed to by the classification
   /// worker; existing PENDING rows on disk are surfaced via [pendingReports].
   Stream<Report> watchPending() => _pendingController.stream;
+
+  /// UIDs touched by report submissions. Used by the reputation sync to
+  /// open a Firestore subscription the first time a new user shows up.
+  Stream<String> watchDiscoveredUids() => _uidController.stream;
 
   /// All reports currently in PENDING status, oldest first so the worker
   /// drains them in submission order on boot.

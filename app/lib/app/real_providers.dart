@@ -27,6 +27,7 @@ import '../core/location_service.dart';
 import '../core/result.dart';
 import '../data/local_db.dart';
 import '../data/reports_repository.dart' as data;
+import '../data/reputation_sync.dart';
 import '../data/risk_engine.dart' as data;
 import '../data/sync_service.dart' as data;
 import '../features/providers.dart' as ui;
@@ -80,6 +81,21 @@ final realGemmaServiceProvider = Provider<GemmaService>((ref) {
   final service = GemmaService(storage: storage);
   ref.onDispose(() => unawaited(service.dispose()));
   return service;
+});
+
+final realReputationSyncProvider =
+    FutureProvider<ReputationSync>((ref) async {
+  final sync = await ref.watch(realSyncServiceProvider.future);
+  final reports = await ref.watch(realReportsRepositoryProvider.future);
+  final svc = ReputationSync(
+    db: ref.watch(localDbProvider),
+    sync: sync,
+    reports: reports,
+    currentUid: ref.watch(currentUserUidValueProvider),
+  );
+  await svc.start();
+  ref.onDispose(() => unawaited(svc.dispose()));
+  return svc;
 });
 
 final realRoutingServiceProvider =

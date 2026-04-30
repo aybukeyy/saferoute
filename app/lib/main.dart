@@ -138,6 +138,14 @@ Future<void> main() async {
     }
   }());
 
+  unawaited(() async {
+    try {
+      await container.read(realReputationSyncProvider.future);
+    } catch (e, st) {
+      debugPrint('[main] reputation sync boot failed: $e\n$st');
+    }
+  }());
+
   runApp(
     UncontrolledProviderScope(
       container: container,

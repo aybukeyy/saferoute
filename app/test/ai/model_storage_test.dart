@@ -289,18 +289,18 @@ const String _kSampleManifestJson = '''
   "version": 1,
   "models": {
     "gemma-4-e2b": {
-      "url": "https://TODO_REPLACED_BY_AGENT_B",
+      "url": "https://<placeholder>",
       "filename": "gemma-4-e2b.task",
       "sizeBytes": 0,
-      "sha256": "TODO_REPLACED_BY_AGENT_B",
+      "sha256": "<placeholder>",
       "displayName": "Gemma 4 E2B (classification)",
       "approximateMb": 1500
     },
     "gemma-4-e4b": {
-      "url": "https://TODO_REPLACED_BY_AGENT_B",
+      "url": "https://<placeholder>",
       "filename": "gemma-4-e4b.task",
       "sizeBytes": 0,
-      "sha256": "TODO_REPLACED_BY_AGENT_B",
+      "sha256": "<placeholder>",
       "displayName": "Gemma 4 E4B (area summary)",
       "approximateMb": 3000
     }

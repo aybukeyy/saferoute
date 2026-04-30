@@ -171,6 +171,7 @@ class CellReportsSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final reportsAsync = ref.watch(reportsInCellProvider(geohash7));
+    final summaryAsync = ref.watch(cellAreaSummaryProvider(geohash7));
 
     return DraggableScrollableSheet(
       expand: false,
@@ -188,6 +189,7 @@ class CellReportsSheet extends ConsumerWidget {
             const SizedBox(height: 4),
             Text('Cell $geohash7',
                 style: Theme.of(context).textTheme.bodySmall),
+            _AreaSummaryHeader(summary: summaryAsync),
             const SizedBox(height: 16),
             reportsAsync.when(
               loading: () => const Padding(
@@ -212,6 +214,56 @@ class CellReportsSheet extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _AreaSummaryHeader extends StatelessWidget {
+  const _AreaSummaryHeader({required this.summary});
+
+  final AsyncValue<String> summary;
+
+  @override
+  Widget build(BuildContext context) {
+    return summary.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.only(top: 12),
+        child: SizedBox(
+          height: 24,
+          child: Row(
+            children: [
+              SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              SizedBox(width: 8),
+              Text('Generating area summary…'),
+            ],
+          ),
+        ),
+      ),
+      error: (_, _) => const SizedBox.shrink(),
+      data: (text) {
+        final trimmed = text.trim();
+        if (trimmed.isEmpty) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                trimmed,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontStyle: FontStyle.italic,
+                    ),
+              ),
+              const SizedBox(height: 12),
+              const Divider(height: 1),
+            ],
+          ),
+        );
+      },
     );
   }
 }

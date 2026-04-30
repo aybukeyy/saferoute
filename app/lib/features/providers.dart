@@ -28,6 +28,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../ai/gemma_service.dart';
 import '../core/geohash.dart';
 import '../models/report.dart';
 import '../models/route_result.dart';
@@ -171,6 +172,20 @@ final cellPulseStreamProvider =
 final reportsInCellProvider =
     FutureProvider.family<List<Report>, String>((ref, geohash7) {
   return ref.watch(reportsRepositoryProvider).reportsInCell(geohash7);
+});
+
+/// Mode-2 Gemma 4 E4B area summary for a single cell. Drives the header in
+/// `CellReportsSheet`. The 5-minute TTL lives inside `GemmaService`.
+final cellAreaSummaryProvider =
+    FutureProvider.family<String, String>((ref, geohash7) async {
+  final reports = await ref.watch(reportsInCellProvider(geohash7).future);
+  final now = DateTime.now();
+  final isNight = now.hour >= 22 || now.hour < 5;
+  return ref.watch(gemmaServiceProvider).summarizeCell(
+        geohash7: geohash7,
+        recentReports: reports,
+        isNight: isNight,
+      );
 });
 
 /// Recent reports list for the feed screen.

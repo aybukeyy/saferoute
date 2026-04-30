@@ -51,6 +51,37 @@ class LocalDb {
     await db;
   }
 
+  /// Returns every UID currently present in the `users` table.
+  Future<List<String>> allUserUids() async {
+    final database = await db;
+    final rows = await database.query('users', columns: ['uid']);
+    return rows.map((r) => r['uid'] as String).toList(growable: false);
+  }
+
+  /// Upserts the reputation column for [uid]. If the row doesn't exist yet
+  /// (a remote UID we discovered before any of their reports landed) it's
+  /// inserted with the given reputation.
+  Future<void> updateReputation(String uid, double value) async {
+    final database = await db;
+    final updated = await database.update(
+      'users',
+      {'reputation': value},
+      where: 'uid = ?',
+      whereArgs: [uid],
+    );
+    if (updated == 0) {
+      await database.insert(
+        'users',
+        {
+          'uid': uid,
+          'reputation': value,
+          'created_at': DateTime.now().toUtc().millisecondsSinceEpoch,
+        },
+        conflictAlgorithm: ConflictAlgorithm.ignore,
+      );
+    }
+  }
+
   /// Closes the connection. Mostly used in tests; production code lets the
   /// DB live until the process dies.
   Future<void> close() async {
