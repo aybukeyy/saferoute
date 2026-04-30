@@ -39,3 +39,6 @@ tools/venv/
 .env
 .env.local
 .env.*.local
+
+# Local planning docs (kept out of git, mirrored from desktop backup)
+docs/planning/
