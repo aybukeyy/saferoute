@@ -12,7 +12,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
+import 'package:uuid/uuid.dart';
 
+import '../../data/photo_storage.dart';
 import '../providers.dart';
 import 'voice_input.dart';
 
@@ -21,6 +23,7 @@ Future<void> showReportSheet(
   BuildContext context, {
   VoiceRecognizer Function()? recognizerFactory,
   ImagePicker? imagePicker,
+  PhotoStorage? photoStorage,
 }) {
   return showModalBottomSheet<void>(
     context: context,
@@ -30,6 +33,7 @@ Future<void> showReportSheet(
     builder: (_) => ReportSheet(
       recognizerFactory: recognizerFactory,
       imagePicker: imagePicker,
+      photoStorage: photoStorage,
     ),
   );
 }
@@ -39,10 +43,12 @@ class ReportSheet extends ConsumerStatefulWidget {
     super.key,
     this.recognizerFactory,
     this.imagePicker,
+    this.photoStorage,
   });
 
   final VoiceRecognizer Function()? recognizerFactory;
   final ImagePicker? imagePicker;
+  final PhotoStorage? photoStorage;
 
   @override
   ConsumerState<ReportSheet> createState() => _ReportSheetState();
@@ -51,6 +57,8 @@ class ReportSheet extends ConsumerStatefulWidget {
 class _ReportSheetState extends ConsumerState<ReportSheet> {
   final _controller = TextEditingController();
   bool _submitting = false;
+  bool _uploading = false;
+  double? _uploadProgress;
   String? _error;
 
   late final VoiceRecognizer _recognizer =
@@ -191,11 +199,36 @@ class _ReportSheetState extends ConsumerState<ReportSheet> {
 
     final messenger = ScaffoldMessenger.of(context);
     try {
+      String? photoUrl;
+      final localPath = _photoPath;
+      if (localPath != null) {
+        final PhotoStorage storage =
+            widget.photoStorage ?? ref.read(photoStorageProvider);
+        final reportId = const Uuid().v4();
+        setState(() {
+          _uploading = true;
+          _uploadProgress = 0.0;
+        });
+        photoUrl = await storage.uploadIfPresent(
+          reportId,
+          localPath,
+          onProgress: (p) {
+            if (!mounted) return;
+            setState(() => _uploadProgress = p.fraction);
+          },
+        );
+        if (!mounted) return;
+        setState(() {
+          _uploading = false;
+          _uploadProgress = null;
+        });
+      }
       final position = await ref.read(locationServiceProvider).currentPosition();
       await ref.read(reportsRepositoryProvider).submitReport(
             text: text,
             at: position,
             photoLocalPath: _photoPath,
+            photoUrl: photoUrl,
           );
       if (!mounted) return;
       Navigator.of(context).pop();
@@ -209,6 +242,8 @@ class _ReportSheetState extends ConsumerState<ReportSheet> {
       if (!mounted) return;
       setState(() {
         _submitting = false;
+        _uploading = false;
+        _uploadProgress = null;
         _error = _humaniseError(e);
       });
     }
@@ -325,6 +360,23 @@ class _ReportSheetState extends ConsumerState<ReportSheet> {
                   icon: const Icon(Icons.close),
                   onPressed: _submitting ? null : _clearPhoto,
                 ),
+              ],
+            ),
+            const SizedBox(height: 8),
+          ],
+          if (_uploading) ...[
+            Row(
+              children: [
+                Expanded(
+                  child: LinearProgressIndicator(
+                    key: const ValueKey('photoUploadProgress'),
+                    value: _uploadProgress,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(_uploadProgress == null
+                    ? '…'
+                    : '${(_uploadProgress! * 100).round()}%'),
               ],
             ),
             const SizedBox(height: 8),

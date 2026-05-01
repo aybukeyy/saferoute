@@ -71,6 +71,31 @@ Future<void> main() async {
           iOS: DarwinInitializationSettings(),
         ),
       );
+      try {
+        final android = notificationsPlugin
+            .resolvePlatformSpecificImplementation<
+                AndroidFlutterLocalNotificationsPlugin>();
+        await android?.requestNotificationsPermission();
+        await android?.createNotificationChannel(
+          const AndroidNotificationChannel(
+            kProximityChannelId,
+            'Proximity alerts',
+            description:
+                'Warns when you enter a high-risk area near recent reports.',
+            importance: Importance.high,
+          ),
+        );
+      } catch (e) {
+        debugPrint('[main] Android notification setup failed: $e');
+      }
+      try {
+        final ios = notificationsPlugin
+            .resolvePlatformSpecificImplementation<
+                IOSFlutterLocalNotificationsPlugin>();
+        await ios?.requestPermissions(alert: true, badge: true, sound: true);
+      } catch (e) {
+        debugPrint('[main] iOS notification permission failed: $e');
+      }
       dispatcher = ({
         required int id,
         required String title,

@@ -33,5 +33,10 @@ void main() {
         if (await tmp.exists()) await tmp.delete();
       }
     });
+
+    test('deleteIfPresent without FirebaseStorage is a silent no-op', () async {
+      final storage = PhotoStorage();
+      await expectLater(storage.deleteIfPresent('r1'), completes);
+    });
   });
 }

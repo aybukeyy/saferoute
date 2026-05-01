@@ -26,6 +26,7 @@ import '../ai/model_storage.dart';
 import '../core/location_service.dart';
 import '../core/result.dart';
 import '../data/local_db.dart';
+import '../data/photo_storage.dart';
 import '../data/reports_repository.dart' as data;
 import '../data/proximity_alert_service.dart';
 import '../data/reputation_sync.dart';
@@ -74,6 +75,7 @@ final realReportsRepositoryProvider =
     db: ref.watch(localDbProvider),
     sync: sync,
     risk: ref.watch(realRiskEngineProvider),
+    photoStorage: ref.watch(photoStorageProvider),
   );
 });
 
@@ -159,6 +161,7 @@ class _ReportsRepositoryAdapter implements ui.ReportsRepositoryLike {
     required String text,
     required LatLng at,
     String? photoLocalPath,
+    String? photoUrl,
   }) async {
     final res = await _inner.submitReport(
       text: text,
@@ -166,6 +169,7 @@ class _ReportsRepositoryAdapter implements ui.ReportsRepositoryLike {
       occurredAt: DateTime.now().toUtc(),
       uid: _uid,
       photoLocalPath: photoLocalPath,
+      photoUrl: photoUrl,
     );
     return switch (res) {
       Ok(value: final r) => r,
@@ -368,6 +372,7 @@ class _WarmingUpReportsRepository implements ui.ReportsRepositoryLike {
     required String text,
     required LatLng at,
     String? photoLocalPath,
+    String? photoUrl,
   }) {
     throw StateError('Reports repository still warming up — try again.');
   }

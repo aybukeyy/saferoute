@@ -88,6 +88,7 @@ abstract class ReportsRepositoryLike {
     required String text,
     required LatLng at,
     String? photoLocalPath,
+    String? photoUrl,
   });
   Future<List<Report>> recentReports({int limit = 50});
   Future<List<Report>> reportsInCell(String geohash7);
@@ -264,6 +265,7 @@ class _FixtureReportsRepository implements ReportsRepositoryLike {
     required String text,
     required LatLng at,
     String? photoLocalPath,
+    String? photoUrl,
   }) async {
     await Future<void>.delayed(const Duration(milliseconds: 250));
     final now = DateTime.now();
@@ -278,6 +280,7 @@ class _FixtureReportsRepository implements ReportsRepositoryLike {
       status: ReportStatus.pending,
       createdAt: now,
       photoLocalPath: photoLocalPath,
+      photoUrl: photoUrl,
     );
     _store.insert(0, report);
     return report;

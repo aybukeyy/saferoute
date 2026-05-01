@@ -22,6 +22,7 @@ import '../models/classification.dart';
 import '../models/report.dart';
 import '../models/risk_cell.dart';
 import 'local_db.dart';
+import 'photo_storage.dart';
 import 'risk_engine.dart';
 import 'sync_service.dart';
 
@@ -62,6 +63,7 @@ class ReportsRepository {
   final LocalDb _db;
   final SyncService _sync;
   final RiskEngine _risk;
+  final PhotoStorage? _photoStorage;
   final Uuid _uuid;
 
   /// Streams that emit `Report` updates per id, used by `watchReport`. Closed
@@ -82,10 +84,12 @@ class ReportsRepository {
     required LocalDb db,
     required SyncService sync,
     required RiskEngine risk,
+    PhotoStorage? photoStorage,
     Uuid? uuid,
   })  : _db = db,
         _sync = sync,
         _risk = risk,
+        _photoStorage = photoStorage,
         _uuid = uuid ?? const Uuid();
 
   /// Hard rate-limit caps. ARCHITECTURE.md §9.
@@ -105,6 +109,7 @@ class ReportsRepository {
     required DateTime occurredAt,
     required String uid,
     String? photoLocalPath,
+    String? photoUrl,
   }) async {
     try {
       // 1) Rate-limit check.
@@ -157,6 +162,7 @@ class ReportsRepository {
         synced: false,
         createdAt: now,
         photoLocalPath: photoLocalPath,
+        photoUrl: photoUrl,
       );
       await db.insert('reports', _reportToRow(report));
 
@@ -339,6 +345,14 @@ class ReportsRepository {
     );
   }
 
+  Future<void> deleteReport(String id) async {
+    final db = await _db.db;
+    await db.delete('reports', where: 'id = ?', whereArgs: [id]);
+    await _photoStorage?.deleteIfPresent(id);
+    final controller = _watchers.remove(id);
+    await controller?.close();
+  }
+
   // ---------------------------------------------------------------------------
   // Internals
   // ---------------------------------------------------------------------------
@@ -511,5 +525,6 @@ final reportsRepositoryProvider = FutureProvider<ReportsRepository>((ref) async 
     db: ref.watch(localDbProvider),
     sync: sync,
     risk: ref.watch(riskEngineProvider),
+    photoStorage: ref.watch(photoStorageProvider),
   );
 });

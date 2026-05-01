@@ -94,6 +94,7 @@ class _FakeReportsRepository implements ReportsRepositoryLike {
     required String text,
     required LatLng at,
     String? photoLocalPath,
+    String? photoUrl,
   }) async =>
       throw UnimplementedError();
 

@@ -4,7 +4,6 @@ import 'package:app/ai/gemma_service.dart';
 import 'package:app/ai/vision_service.dart';
 import 'package:app/data/classification_worker.dart';
 import 'package:app/data/local_db.dart';
-import 'package:app/data/photo_storage.dart';
 import 'package:app/data/reports_repository.dart';
 import 'package:app/data/risk_engine.dart';
 import 'package:app/data/sync_service.dart';
@@ -61,28 +60,25 @@ void main() {
       await worker.dispose();
     });
 
-    test('PENDING with photoLocalPath: upload + vision called, then classify',
+    test('PENDING with photoLocalPath: vision called, then classify',
         () async {
       final report = _mkPending('r-photo', photoPath: '/tmp/x.jpg');
       final fakeRepo = _FakeReportsRepository(pending: [report]);
       final fakeGemma = _FakeGemmaService(result: _mkClassification());
-      final fakePhoto = _FakePhotoStorage(url: 'https://example/r-photo.jpg');
       final fakeVision = _FakeVisionService(summary: 'Dark alley, no lights.');
 
       final worker = ClassificationWorker(
         reports: fakeRepo,
         gemma: fakeGemma,
-        photoStorage: fakePhoto,
         visionService: fakeVision,
       );
       await worker.start();
       await fakeRepo.idleFuture;
 
-      expect(fakePhoto.uploadCalls, [('r-photo', '/tmp/x.jpg')]);
       expect(fakeVision.analyzeCalls, ['/tmp/x.jpg']);
       expect(fakeRepo.photoUpdates, hasLength(1));
       expect(fakeRepo.photoUpdates.first.$1, 'r-photo');
-      expect(fakeRepo.photoUpdates.first.$2, 'https://example/r-photo.jpg');
+      expect(fakeRepo.photoUpdates.first.$2, isNull);
       expect(fakeRepo.photoUpdates.first.$3, 'Dark alley, no lights.');
       expect(fakeGemma.calls, hasLength(1));
       expect(fakeRepo.updates, hasLength(1));
@@ -90,23 +86,20 @@ void main() {
       await worker.dispose();
     });
 
-    test('PENDING without photo: photo storage / vision not called', () async {
+    test('PENDING without photo: vision not called', () async {
       final report = _mkPending('r-no-photo');
       final fakeRepo = _FakeReportsRepository(pending: [report]);
       final fakeGemma = _FakeGemmaService(result: _mkClassification());
-      final fakePhoto = _FakePhotoStorage(url: 'unused');
       final fakeVision = _FakeVisionService(summary: 'unused');
 
       final worker = ClassificationWorker(
         reports: fakeRepo,
         gemma: fakeGemma,
-        photoStorage: fakePhoto,
         visionService: fakeVision,
       );
       await worker.start();
       await fakeRepo.idleFuture;
 
-      expect(fakePhoto.uploadCalls, isEmpty);
       expect(fakeVision.analyzeCalls, isEmpty);
       expect(fakeRepo.photoUpdates, isEmpty);
       expect(fakeRepo.updates, hasLength(1));
@@ -119,22 +112,18 @@ void main() {
       final report = _mkPending('r-novis', photoPath: '/tmp/y.jpg');
       final fakeRepo = _FakeReportsRepository(pending: [report]);
       final fakeGemma = _FakeGemmaService(result: _mkClassification());
-      final fakePhoto = _FakePhotoStorage(url: 'https://example/r-novis.jpg');
       final fakeVision = _FakeVisionService(summary: null);
 
       final worker = ClassificationWorker(
         reports: fakeRepo,
         gemma: fakeGemma,
-        photoStorage: fakePhoto,
         visionService: fakeVision,
       );
       await worker.start();
       await fakeRepo.idleFuture;
 
       expect(fakeVision.analyzeCalls, ['/tmp/y.jpg']);
-      expect(fakeRepo.photoUpdates, hasLength(1));
-      expect(fakeRepo.photoUpdates.first.$2, 'https://example/r-novis.jpg');
-      expect(fakeRepo.photoUpdates.first.$3, isNull);
+      expect(fakeRepo.photoUpdates, isEmpty);
       expect(fakeGemma.calls, hasLength(1));
       expect(fakeRepo.updates, hasLength(1));
       expect(fakeRepo.failures, isEmpty);
@@ -265,23 +254,6 @@ class _FakeReportsRepository implements ReportsRepository {
     String? visionSummary,
   }) async {
     photoUpdates.add((id, photoUrl, visionSummary));
-  }
-
-  @override
-  noSuchMethod(Invocation invocation) =>
-      throw UnimplementedError('Unexpected call ${invocation.memberName}');
-}
-
-class _FakePhotoStorage implements PhotoStorage {
-  _FakePhotoStorage({required this.url});
-  final String? url;
-  final List<(String, String?)> uploadCalls = [];
-
-  @override
-  Future<String?> uploadIfPresent(String reportId, String? localPath) async {
-    if (localPath == null) return null;
-    uploadCalls.add((reportId, localPath));
-    return url;
   }
 
   @override

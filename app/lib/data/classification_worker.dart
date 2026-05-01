@@ -13,23 +13,19 @@ import '../ai/gemma_service.dart';
 import '../ai/vision_service.dart';
 import '../app/real_providers.dart';
 import '../models/report.dart';
-import 'photo_storage.dart';
 import 'reports_repository.dart';
 
 class ClassificationWorker {
   ClassificationWorker({
     required ReportsRepository reports,
     required GemmaService gemma,
-    PhotoStorage? photoStorage,
     VisionService? visionService,
   })  : _reports = reports,
         _gemma = gemma,
-        _photoStorage = photoStorage,
         _visionService = visionService;
 
   final ReportsRepository _reports;
   final GemmaService _gemma;
-  final PhotoStorage? _photoStorage;
   final VisionService? _visionService;
 
   final Queue<Report> _queue = Queue<Report>();
@@ -73,23 +69,16 @@ class ClassificationWorker {
 
   Future<void> _process(Report r) async {
     if (r.photoLocalPath != null) {
-      String? photoUrl;
       String? visionSummary;
-      try {
-        photoUrl = await _photoStorage?.uploadIfPresent(r.id, r.photoLocalPath);
-      } catch (e) {
-        debugPrint('[ClassificationWorker] photo upload threw for ${r.id}: $e');
-      }
       try {
         visionSummary = await _visionService?.analyzeImage(r.photoLocalPath);
       } catch (e) {
         debugPrint('[ClassificationWorker] vision analyze threw for ${r.id}: $e');
       }
-      if (photoUrl != null || visionSummary != null) {
+      if (visionSummary != null) {
         try {
           await _reports.updatePhotoAndVision(
             r.id,
-            photoUrl: photoUrl,
             visionSummary: visionSummary,
           );
         } catch (e) {
@@ -131,7 +120,6 @@ final classificationWorkerProvider =
   final worker = ClassificationWorker(
     reports: reports,
     gemma: ref.watch(realGemmaServiceProvider),
-    photoStorage: ref.watch(photoStorageProvider),
     visionService: ref.watch(visionServiceProvider),
   );
   await worker.start();
