@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Report {
 
- String get id; String get uid; String get text; double get lat; double get lng; String get geohash7; DateTime get occurredAt; ReportCategory? get category; RiskLevel? get riskLevel; double? get confidence; String? get explanation; ReportStatus get status; bool get synced; DateTime get createdAt;
+ String get id; String get uid; String get text; double get lat; double get lng; String get geohash7; DateTime get occurredAt; ReportCategory? get category; RiskLevel? get riskLevel; double? get confidence; String? get explanation; ReportStatus get status; bool get synced; DateTime get createdAt; String? get photoLocalPath; String? get photoUrl; String? get visionSummary;
 /// Create a copy of Report
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $ReportCopyWith<Report> get copyWith => _$ReportCopyWithImpl<Report>(this as Rep
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Report&&(identical(other.id, id) || other.id == id)&&(identical(other.uid, uid) || other.uid == uid)&&(identical(other.text, text) || other.text == text)&&(identical(other.lat, lat) || other.lat == lat)&&(identical(other.lng, lng) || other.lng == lng)&&(identical(other.geohash7, geohash7) || other.geohash7 == geohash7)&&(identical(other.occurredAt, occurredAt) || other.occurredAt == occurredAt)&&(identical(other.category, category) || other.category == category)&&(identical(other.riskLevel, riskLevel) || other.riskLevel == riskLevel)&&(identical(other.confidence, confidence) || other.confidence == confidence)&&(identical(other.explanation, explanation) || other.explanation == explanation)&&(identical(other.status, status) || other.status == status)&&(identical(other.synced, synced) || other.synced == synced)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Report&&(identical(other.id, id) || other.id == id)&&(identical(other.uid, uid) || other.uid == uid)&&(identical(other.text, text) || other.text == text)&&(identical(other.lat, lat) || other.lat == lat)&&(identical(other.lng, lng) || other.lng == lng)&&(identical(other.geohash7, geohash7) || other.geohash7 == geohash7)&&(identical(other.occurredAt, occurredAt) || other.occurredAt == occurredAt)&&(identical(other.category, category) || other.category == category)&&(identical(other.riskLevel, riskLevel) || other.riskLevel == riskLevel)&&(identical(other.confidence, confidence) || other.confidence == confidence)&&(identical(other.explanation, explanation) || other.explanation == explanation)&&(identical(other.status, status) || other.status == status)&&(identical(other.synced, synced) || other.synced == synced)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.photoLocalPath, photoLocalPath) || other.photoLocalPath == photoLocalPath)&&(identical(other.photoUrl, photoUrl) || other.photoUrl == photoUrl)&&(identical(other.visionSummary, visionSummary) || other.visionSummary == visionSummary));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,uid,text,lat,lng,geohash7,occurredAt,category,riskLevel,confidence,explanation,status,synced,createdAt);
+int get hashCode => Object.hash(runtimeType,id,uid,text,lat,lng,geohash7,occurredAt,category,riskLevel,confidence,explanation,status,synced,createdAt,photoLocalPath,photoUrl,visionSummary);
 
 @override
 String toString() {
-  return 'Report(id: $id, uid: $uid, text: $text, lat: $lat, lng: $lng, geohash7: $geohash7, occurredAt: $occurredAt, category: $category, riskLevel: $riskLevel, confidence: $confidence, explanation: $explanation, status: $status, synced: $synced, createdAt: $createdAt)';
+  return 'Report(id: $id, uid: $uid, text: $text, lat: $lat, lng: $lng, geohash7: $geohash7, occurredAt: $occurredAt, category: $category, riskLevel: $riskLevel, confidence: $confidence, explanation: $explanation, status: $status, synced: $synced, createdAt: $createdAt, photoLocalPath: $photoLocalPath, photoUrl: $photoUrl, visionSummary: $visionSummary)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $ReportCopyWith<$Res>  {
   factory $ReportCopyWith(Report value, $Res Function(Report) _then) = _$ReportCopyWithImpl;
 @useResult
 $Res call({
- String id, String uid, String text, double lat, double lng, String geohash7, DateTime occurredAt, ReportCategory? category, RiskLevel? riskLevel, double? confidence, String? explanation, ReportStatus status, bool synced, DateTime createdAt
+ String id, String uid, String text, double lat, double lng, String geohash7, DateTime occurredAt, ReportCategory? category, RiskLevel? riskLevel, double? confidence, String? explanation, ReportStatus status, bool synced, DateTime createdAt, String? photoLocalPath, String? photoUrl, String? visionSummary
 });
 
 
@@ -65,7 +65,7 @@ class _$ReportCopyWithImpl<$Res>
 
 /// Create a copy of Report
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? uid = null,Object? text = null,Object? lat = null,Object? lng = null,Object? geohash7 = null,Object? occurredAt = null,Object? category = freezed,Object? riskLevel = freezed,Object? confidence = freezed,Object? explanation = freezed,Object? status = null,Object? synced = null,Object? createdAt = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? uid = null,Object? text = null,Object? lat = null,Object? lng = null,Object? geohash7 = null,Object? occurredAt = null,Object? category = freezed,Object? riskLevel = freezed,Object? confidence = freezed,Object? explanation = freezed,Object? status = null,Object? synced = null,Object? createdAt = null,Object? photoLocalPath = freezed,Object? photoUrl = freezed,Object? visionSummary = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,uid: null == uid ? _self.uid : uid // ignore: cast_nullable_to_non_nullable
@@ -81,7 +81,10 @@ as double?,explanation: freezed == explanation ? _self.explanation : explanation
 as String?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as ReportStatus,synced: null == synced ? _self.synced : synced // ignore: cast_nullable_to_non_nullable
 as bool,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
-as DateTime,
+as DateTime,photoLocalPath: freezed == photoLocalPath ? _self.photoLocalPath : photoLocalPath // ignore: cast_nullable_to_non_nullable
+as String?,photoUrl: freezed == photoUrl ? _self.photoUrl : photoUrl // ignore: cast_nullable_to_non_nullable
+as String?,visionSummary: freezed == visionSummary ? _self.visionSummary : visionSummary // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -166,10 +169,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String uid,  String text,  double lat,  double lng,  String geohash7,  DateTime occurredAt,  ReportCategory? category,  RiskLevel? riskLevel,  double? confidence,  String? explanation,  ReportStatus status,  bool synced,  DateTime createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String uid,  String text,  double lat,  double lng,  String geohash7,  DateTime occurredAt,  ReportCategory? category,  RiskLevel? riskLevel,  double? confidence,  String? explanation,  ReportStatus status,  bool synced,  DateTime createdAt,  String? photoLocalPath,  String? photoUrl,  String? visionSummary)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Report() when $default != null:
-return $default(_that.id,_that.uid,_that.text,_that.lat,_that.lng,_that.geohash7,_that.occurredAt,_that.category,_that.riskLevel,_that.confidence,_that.explanation,_that.status,_that.synced,_that.createdAt);case _:
+return $default(_that.id,_that.uid,_that.text,_that.lat,_that.lng,_that.geohash7,_that.occurredAt,_that.category,_that.riskLevel,_that.confidence,_that.explanation,_that.status,_that.synced,_that.createdAt,_that.photoLocalPath,_that.photoUrl,_that.visionSummary);case _:
   return orElse();
 
 }
@@ -187,10 +190,10 @@ return $default(_that.id,_that.uid,_that.text,_that.lat,_that.lng,_that.geohash7
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String uid,  String text,  double lat,  double lng,  String geohash7,  DateTime occurredAt,  ReportCategory? category,  RiskLevel? riskLevel,  double? confidence,  String? explanation,  ReportStatus status,  bool synced,  DateTime createdAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String uid,  String text,  double lat,  double lng,  String geohash7,  DateTime occurredAt,  ReportCategory? category,  RiskLevel? riskLevel,  double? confidence,  String? explanation,  ReportStatus status,  bool synced,  DateTime createdAt,  String? photoLocalPath,  String? photoUrl,  String? visionSummary)  $default,) {final _that = this;
 switch (_that) {
 case _Report():
-return $default(_that.id,_that.uid,_that.text,_that.lat,_that.lng,_that.geohash7,_that.occurredAt,_that.category,_that.riskLevel,_that.confidence,_that.explanation,_that.status,_that.synced,_that.createdAt);case _:
+return $default(_that.id,_that.uid,_that.text,_that.lat,_that.lng,_that.geohash7,_that.occurredAt,_that.category,_that.riskLevel,_that.confidence,_that.explanation,_that.status,_that.synced,_that.createdAt,_that.photoLocalPath,_that.photoUrl,_that.visionSummary);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -207,10 +210,10 @@ return $default(_that.id,_that.uid,_that.text,_that.lat,_that.lng,_that.geohash7
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String uid,  String text,  double lat,  double lng,  String geohash7,  DateTime occurredAt,  ReportCategory? category,  RiskLevel? riskLevel,  double? confidence,  String? explanation,  ReportStatus status,  bool synced,  DateTime createdAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String uid,  String text,  double lat,  double lng,  String geohash7,  DateTime occurredAt,  ReportCategory? category,  RiskLevel? riskLevel,  double? confidence,  String? explanation,  ReportStatus status,  bool synced,  DateTime createdAt,  String? photoLocalPath,  String? photoUrl,  String? visionSummary)?  $default,) {final _that = this;
 switch (_that) {
 case _Report() when $default != null:
-return $default(_that.id,_that.uid,_that.text,_that.lat,_that.lng,_that.geohash7,_that.occurredAt,_that.category,_that.riskLevel,_that.confidence,_that.explanation,_that.status,_that.synced,_that.createdAt);case _:
+return $default(_that.id,_that.uid,_that.text,_that.lat,_that.lng,_that.geohash7,_that.occurredAt,_that.category,_that.riskLevel,_that.confidence,_that.explanation,_that.status,_that.synced,_that.createdAt,_that.photoLocalPath,_that.photoUrl,_that.visionSummary);case _:
   return null;
 
 }
@@ -222,7 +225,7 @@ return $default(_that.id,_that.uid,_that.text,_that.lat,_that.lng,_that.geohash7
 @JsonSerializable()
 
 class _Report implements Report {
-  const _Report({required this.id, required this.uid, required this.text, required this.lat, required this.lng, required this.geohash7, required this.occurredAt, this.category, this.riskLevel, this.confidence, this.explanation, this.status = ReportStatus.pending, this.synced = false, required this.createdAt});
+  const _Report({required this.id, required this.uid, required this.text, required this.lat, required this.lng, required this.geohash7, required this.occurredAt, this.category, this.riskLevel, this.confidence, this.explanation, this.status = ReportStatus.pending, this.synced = false, required this.createdAt, this.photoLocalPath, this.photoUrl, this.visionSummary});
   factory _Report.fromJson(Map<String, dynamic> json) => _$ReportFromJson(json);
 
 @override final  String id;
@@ -239,6 +242,9 @@ class _Report implements Report {
 @override@JsonKey() final  ReportStatus status;
 @override@JsonKey() final  bool synced;
 @override final  DateTime createdAt;
+@override final  String? photoLocalPath;
+@override final  String? photoUrl;
+@override final  String? visionSummary;
 
 /// Create a copy of Report
 /// with the given fields replaced by the non-null parameter values.
@@ -253,16 +259,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Report&&(identical(other.id, id) || other.id == id)&&(identical(other.uid, uid) || other.uid == uid)&&(identical(other.text, text) || other.text == text)&&(identical(other.lat, lat) || other.lat == lat)&&(identical(other.lng, lng) || other.lng == lng)&&(identical(other.geohash7, geohash7) || other.geohash7 == geohash7)&&(identical(other.occurredAt, occurredAt) || other.occurredAt == occurredAt)&&(identical(other.category, category) || other.category == category)&&(identical(other.riskLevel, riskLevel) || other.riskLevel == riskLevel)&&(identical(other.confidence, confidence) || other.confidence == confidence)&&(identical(other.explanation, explanation) || other.explanation == explanation)&&(identical(other.status, status) || other.status == status)&&(identical(other.synced, synced) || other.synced == synced)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Report&&(identical(other.id, id) || other.id == id)&&(identical(other.uid, uid) || other.uid == uid)&&(identical(other.text, text) || other.text == text)&&(identical(other.lat, lat) || other.lat == lat)&&(identical(other.lng, lng) || other.lng == lng)&&(identical(other.geohash7, geohash7) || other.geohash7 == geohash7)&&(identical(other.occurredAt, occurredAt) || other.occurredAt == occurredAt)&&(identical(other.category, category) || other.category == category)&&(identical(other.riskLevel, riskLevel) || other.riskLevel == riskLevel)&&(identical(other.confidence, confidence) || other.confidence == confidence)&&(identical(other.explanation, explanation) || other.explanation == explanation)&&(identical(other.status, status) || other.status == status)&&(identical(other.synced, synced) || other.synced == synced)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.photoLocalPath, photoLocalPath) || other.photoLocalPath == photoLocalPath)&&(identical(other.photoUrl, photoUrl) || other.photoUrl == photoUrl)&&(identical(other.visionSummary, visionSummary) || other.visionSummary == visionSummary));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,uid,text,lat,lng,geohash7,occurredAt,category,riskLevel,confidence,explanation,status,synced,createdAt);
+int get hashCode => Object.hash(runtimeType,id,uid,text,lat,lng,geohash7,occurredAt,category,riskLevel,confidence,explanation,status,synced,createdAt,photoLocalPath,photoUrl,visionSummary);
 
 @override
 String toString() {
-  return 'Report(id: $id, uid: $uid, text: $text, lat: $lat, lng: $lng, geohash7: $geohash7, occurredAt: $occurredAt, category: $category, riskLevel: $riskLevel, confidence: $confidence, explanation: $explanation, status: $status, synced: $synced, createdAt: $createdAt)';
+  return 'Report(id: $id, uid: $uid, text: $text, lat: $lat, lng: $lng, geohash7: $geohash7, occurredAt: $occurredAt, category: $category, riskLevel: $riskLevel, confidence: $confidence, explanation: $explanation, status: $status, synced: $synced, createdAt: $createdAt, photoLocalPath: $photoLocalPath, photoUrl: $photoUrl, visionSummary: $visionSummary)';
 }
 
 
@@ -273,7 +279,7 @@ abstract mixin class _$ReportCopyWith<$Res> implements $ReportCopyWith<$Res> {
   factory _$ReportCopyWith(_Report value, $Res Function(_Report) _then) = __$ReportCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String uid, String text, double lat, double lng, String geohash7, DateTime occurredAt, ReportCategory? category, RiskLevel? riskLevel, double? confidence, String? explanation, ReportStatus status, bool synced, DateTime createdAt
+ String id, String uid, String text, double lat, double lng, String geohash7, DateTime occurredAt, ReportCategory? category, RiskLevel? riskLevel, double? confidence, String? explanation, ReportStatus status, bool synced, DateTime createdAt, String? photoLocalPath, String? photoUrl, String? visionSummary
 });
 
 
@@ -290,7 +296,7 @@ class __$ReportCopyWithImpl<$Res>
 
 /// Create a copy of Report
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? uid = null,Object? text = null,Object? lat = null,Object? lng = null,Object? geohash7 = null,Object? occurredAt = null,Object? category = freezed,Object? riskLevel = freezed,Object? confidence = freezed,Object? explanation = freezed,Object? status = null,Object? synced = null,Object? createdAt = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? uid = null,Object? text = null,Object? lat = null,Object? lng = null,Object? geohash7 = null,Object? occurredAt = null,Object? category = freezed,Object? riskLevel = freezed,Object? confidence = freezed,Object? explanation = freezed,Object? status = null,Object? synced = null,Object? createdAt = null,Object? photoLocalPath = freezed,Object? photoUrl = freezed,Object? visionSummary = freezed,}) {
   return _then(_Report(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,uid: null == uid ? _self.uid : uid // ignore: cast_nullable_to_non_nullable
@@ -306,7 +312,10 @@ as double?,explanation: freezed == explanation ? _self.explanation : explanation
 as String?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as ReportStatus,synced: null == synced ? _self.synced : synced // ignore: cast_nullable_to_non_nullable
 as bool,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
-as DateTime,
+as DateTime,photoLocalPath: freezed == photoLocalPath ? _self.photoLocalPath : photoLocalPath // ignore: cast_nullable_to_non_nullable
+as String?,photoUrl: freezed == photoUrl ? _self.photoUrl : photoUrl // ignore: cast_nullable_to_non_nullable
+as String?,visionSummary: freezed == visionSummary ? _self.visionSummary : visionSummary // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

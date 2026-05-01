@@ -65,6 +65,9 @@ abstract class Report with _$Report {
     @Default(ReportStatus.pending) ReportStatus status,
     @Default(false) bool synced,
     required DateTime createdAt,
+    String? photoLocalPath,
+    String? photoUrl,
+    String? visionSummary,
   }) = _Report;
 
   factory Report.fromJson(Map<String, dynamic> json) => _$ReportFromJson(json);

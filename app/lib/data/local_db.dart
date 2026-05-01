@@ -13,7 +13,7 @@ import 'package:sqflite/sqflite.dart';
 
 /// Bumping this constant runs the migration ladder in [_runMigrations].
 /// Keep migrations additive and idempotent so a partial upgrade is safe.
-const int kLocalDbSchemaVersion = 1;
+const int kLocalDbSchemaVersion = 2;
 
 /// Async-singleton wrapper around the local SQLite database.
 ///
@@ -125,20 +125,23 @@ class LocalDb {
 
     await db.execute('''
       CREATE TABLE reports (
-        id            TEXT PRIMARY KEY,
-        uid           TEXT REFERENCES users(uid),
-        text          TEXT NOT NULL,
-        lat           REAL NOT NULL,
-        lng           REAL NOT NULL,
-        geohash7      TEXT NOT NULL,
-        occurred_at   INTEGER NOT NULL,
-        category      TEXT,
-        risk_level    TEXT,
-        confidence    REAL,
-        explanation   TEXT,
-        status        TEXT NOT NULL DEFAULT 'PENDING',
-        synced        INTEGER NOT NULL DEFAULT 0,
-        created_at    INTEGER NOT NULL
+        id                TEXT PRIMARY KEY,
+        uid               TEXT REFERENCES users(uid),
+        text              TEXT NOT NULL,
+        lat               REAL NOT NULL,
+        lng               REAL NOT NULL,
+        geohash7          TEXT NOT NULL,
+        occurred_at       INTEGER NOT NULL,
+        category          TEXT,
+        risk_level        TEXT,
+        confidence        REAL,
+        explanation       TEXT,
+        status            TEXT NOT NULL DEFAULT 'PENDING',
+        synced            INTEGER NOT NULL DEFAULT 0,
+        created_at        INTEGER NOT NULL,
+        photo_local_path  TEXT,
+        photo_url         TEXT,
+        vision_summary    TEXT
       )
     ''');
     await db.execute(
@@ -175,11 +178,18 @@ class LocalDb {
   }
 
   static Future<void> _applyMigration(Database db, int version) async {
-    // When you add v2:
-    //   if (version == 2) {
-    //     await db.execute('ALTER TABLE reports ADD COLUMN ...');
-    //     return;
-    //   }
+    if (version == 2) {
+      await db.execute(
+        'ALTER TABLE reports ADD COLUMN photo_local_path TEXT',
+      );
+      await db.execute(
+        'ALTER TABLE reports ADD COLUMN photo_url TEXT',
+      );
+      await db.execute(
+        'ALTER TABLE reports ADD COLUMN vision_summary TEXT',
+      );
+      return;
+    }
     throw StateError('No migration registered for v$version');
   }
 }

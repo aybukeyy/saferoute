@@ -106,7 +106,7 @@ class SyncService {
   Future<void> mirrorReport(Report r) async {
     if (!_enabled || _firestore == null) return;
     try {
-      await _firestore.collection('reports').doc(r.id).set(<String, dynamic>{
+      final payload = <String, dynamic>{
         'uid': r.uid,
         'text': r.text,
         'lat': r.lat,
@@ -120,7 +120,10 @@ class SyncService {
         'status': _statusWire(r.status),
         'createdAt': Timestamp.fromDate(r.createdAt),
         'pulse': true,
-      });
+      };
+      if (r.photoUrl != null) payload['photoUrl'] = r.photoUrl;
+      if (r.visionSummary != null) payload['visionSummary'] = r.visionSummary;
+      await _firestore.collection('reports').doc(r.id).set(payload);
     } catch (e) {
       debugPrint('SyncService.mirrorReport: $e');
     }

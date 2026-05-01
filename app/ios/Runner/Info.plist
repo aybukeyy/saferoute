@@ -12,6 +12,10 @@
 	<string>Safe Route uses your microphone to let you submit reports by voice.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Safe Route transcribes your speech into a report on this device.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Safe Route uses your camera to attach an optional photo to your report.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Safe Route uses your photo library to attach an optional photo to your report.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

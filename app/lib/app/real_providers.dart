@@ -158,12 +158,14 @@ class _ReportsRepositoryAdapter implements ui.ReportsRepositoryLike {
   Future<Report> submitReport({
     required String text,
     required LatLng at,
+    String? photoLocalPath,
   }) async {
     final res = await _inner.submitReport(
       text: text,
       at: at,
       occurredAt: DateTime.now().toUtc(),
       uid: _uid,
+      photoLocalPath: photoLocalPath,
     );
     return switch (res) {
       Ok(value: final r) => r,
@@ -362,7 +364,11 @@ final realSyncServiceLikeProvider = Provider<ui.SyncServiceLike>((ref) {
 
 class _WarmingUpReportsRepository implements ui.ReportsRepositoryLike {
   @override
-  Future<Report> submitReport({required String text, required LatLng at}) {
+  Future<Report> submitReport({
+    required String text,
+    required LatLng at,
+    String? photoLocalPath,
+  }) {
     throw StateError('Reports repository still warming up — try again.');
   }
 

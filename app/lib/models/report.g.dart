@@ -23,6 +23,9 @@ _Report _$ReportFromJson(Map<String, dynamic> json) => _Report(
       ReportStatus.pending,
   synced: json['synced'] as bool? ?? false,
   createdAt: DateTime.parse(json['createdAt'] as String),
+  photoLocalPath: json['photoLocalPath'] as String?,
+  photoUrl: json['photoUrl'] as String?,
+  visionSummary: json['visionSummary'] as String?,
 );
 
 Map<String, dynamic> _$ReportToJson(_Report instance) => <String, dynamic>{
@@ -40,6 +43,9 @@ Map<String, dynamic> _$ReportToJson(_Report instance) => <String, dynamic>{
   'status': _$ReportStatusEnumMap[instance.status]!,
   'synced': instance.synced,
   'createdAt': instance.createdAt.toIso8601String(),
+  'photoLocalPath': instance.photoLocalPath,
+  'photoUrl': instance.photoUrl,
+  'visionSummary': instance.visionSummary,
 };
 
 const _$ReportCategoryEnumMap = {

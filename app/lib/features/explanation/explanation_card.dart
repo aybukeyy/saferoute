@@ -282,49 +282,81 @@ class _ReportTile extends StatelessWidget {
       _ => Colors.grey,
     };
 
+    final body = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: levelColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: levelColor, width: 1),
+              ),
+              child: Text(
+                (report.riskLevel?.name ?? 'unknown').toUpperCase(),
+                style: TextStyle(
+                    color: levelColor,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(report.category?.name ?? '—',
+                style: Theme.of(context).textTheme.bodySmall),
+            const Spacer(),
+            Text(time, style: Theme.of(context).textTheme.bodySmall),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text('“${report.text}”',
+            style: const TextStyle(fontStyle: FontStyle.italic)),
+        if (report.visionSummary != null &&
+            report.visionSummary!.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Text(
+            'Scene: ${report.visionSummary!}',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+        if (report.explanation != null && report.explanation!.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Text(
+            'Gemma 4 E2B: ${report.explanation!}',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+      ],
+    );
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
         padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: levelColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: levelColor, width: 1),
+        child: report.photoUrl != null && report.photoUrl!.isNotEmpty
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: Image.network(
+                      report.photoUrl!,
+                      width: 48,
+                      height: 48,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => const SizedBox(
+                        width: 48,
+                        height: 48,
+                        child: Icon(Icons.broken_image_outlined, size: 24),
+                      ),
+                    ),
                   ),
-                  child: Text(
-                    (report.riskLevel?.name ?? 'unknown').toUpperCase(),
-                    style: TextStyle(
-                        color: levelColor,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(report.category?.name ?? '—',
-                    style: Theme.of(context).textTheme.bodySmall),
-                const Spacer(),
-                Text(time, style: Theme.of(context).textTheme.bodySmall),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text('“${report.text}”',
-                style: const TextStyle(fontStyle: FontStyle.italic)),
-            if (report.explanation != null && report.explanation!.isNotEmpty) ...[
-              const SizedBox(height: 6),
-              Text(
-                'Gemma 4 E2B: ${report.explanation!}',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
-          ],
-        ),
+                  const SizedBox(width: 10),
+                  Expanded(child: body),
+                ],
+              )
+            : body,
       ),
     );
   }

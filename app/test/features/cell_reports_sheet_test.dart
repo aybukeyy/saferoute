@@ -90,8 +90,11 @@ class _FakeReportsRepository implements ReportsRepositoryLike {
   final List<Report> reports;
 
   @override
-  Future<Report> submitReport(
-          {required String text, required LatLng at}) async =>
+  Future<Report> submitReport({
+    required String text,
+    required LatLng at,
+    String? photoLocalPath,
+  }) async =>
       throw UnimplementedError();
 
   @override

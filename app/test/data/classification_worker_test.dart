@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:app/ai/gemma_service.dart';
+import 'package:app/ai/vision_service.dart';
 import 'package:app/data/classification_worker.dart';
 import 'package:app/data/local_db.dart';
+import 'package:app/data/photo_storage.dart';
 import 'package:app/data/reports_repository.dart';
 import 'package:app/data/risk_engine.dart';
 import 'package:app/data/sync_service.dart';
@@ -59,6 +61,87 @@ void main() {
       await worker.dispose();
     });
 
+    test('PENDING with photoLocalPath: upload + vision called, then classify',
+        () async {
+      final report = _mkPending('r-photo', photoPath: '/tmp/x.jpg');
+      final fakeRepo = _FakeReportsRepository(pending: [report]);
+      final fakeGemma = _FakeGemmaService(result: _mkClassification());
+      final fakePhoto = _FakePhotoStorage(url: 'https://example/r-photo.jpg');
+      final fakeVision = _FakeVisionService(summary: 'Dark alley, no lights.');
+
+      final worker = ClassificationWorker(
+        reports: fakeRepo,
+        gemma: fakeGemma,
+        photoStorage: fakePhoto,
+        visionService: fakeVision,
+      );
+      await worker.start();
+      await fakeRepo.idleFuture;
+
+      expect(fakePhoto.uploadCalls, [('r-photo', '/tmp/x.jpg')]);
+      expect(fakeVision.analyzeCalls, ['/tmp/x.jpg']);
+      expect(fakeRepo.photoUpdates, hasLength(1));
+      expect(fakeRepo.photoUpdates.first.$1, 'r-photo');
+      expect(fakeRepo.photoUpdates.first.$2, 'https://example/r-photo.jpg');
+      expect(fakeRepo.photoUpdates.first.$3, 'Dark alley, no lights.');
+      expect(fakeGemma.calls, hasLength(1));
+      expect(fakeRepo.updates, hasLength(1));
+
+      await worker.dispose();
+    });
+
+    test('PENDING without photo: photo storage / vision not called', () async {
+      final report = _mkPending('r-no-photo');
+      final fakeRepo = _FakeReportsRepository(pending: [report]);
+      final fakeGemma = _FakeGemmaService(result: _mkClassification());
+      final fakePhoto = _FakePhotoStorage(url: 'unused');
+      final fakeVision = _FakeVisionService(summary: 'unused');
+
+      final worker = ClassificationWorker(
+        reports: fakeRepo,
+        gemma: fakeGemma,
+        photoStorage: fakePhoto,
+        visionService: fakeVision,
+      );
+      await worker.start();
+      await fakeRepo.idleFuture;
+
+      expect(fakePhoto.uploadCalls, isEmpty);
+      expect(fakeVision.analyzeCalls, isEmpty);
+      expect(fakeRepo.photoUpdates, isEmpty);
+      expect(fakeRepo.updates, hasLength(1));
+
+      await worker.dispose();
+    });
+
+    test('PENDING with photo, vision returns null: classify still proceeds',
+        () async {
+      final report = _mkPending('r-novis', photoPath: '/tmp/y.jpg');
+      final fakeRepo = _FakeReportsRepository(pending: [report]);
+      final fakeGemma = _FakeGemmaService(result: _mkClassification());
+      final fakePhoto = _FakePhotoStorage(url: 'https://example/r-novis.jpg');
+      final fakeVision = _FakeVisionService(summary: null);
+
+      final worker = ClassificationWorker(
+        reports: fakeRepo,
+        gemma: fakeGemma,
+        photoStorage: fakePhoto,
+        visionService: fakeVision,
+      );
+      await worker.start();
+      await fakeRepo.idleFuture;
+
+      expect(fakeVision.analyzeCalls, ['/tmp/y.jpg']);
+      expect(fakeRepo.photoUpdates, hasLength(1));
+      expect(fakeRepo.photoUpdates.first.$2, 'https://example/r-novis.jpg');
+      expect(fakeRepo.photoUpdates.first.$3, isNull);
+      expect(fakeGemma.calls, hasLength(1));
+      expect(fakeRepo.updates, hasLength(1));
+      expect(fakeRepo.failures, isEmpty);
+
+      await worker.dispose();
+    });
+
     test('two PENDING reports queued: processed in submission order', () async {
       final r1 = _mkPending('r1');
       final r2 = _mkPending('r2');
@@ -86,7 +169,7 @@ void main() {
   });
 }
 
-Report _mkPending(String id) {
+Report _mkPending(String id, {String? photoPath}) {
   final t = DateTime.utc(2026, 4, 30, 12, 0).add(Duration(seconds: id.hashCode));
   return Report(
     id: id,
@@ -98,6 +181,7 @@ Report _mkPending(String id) {
     occurredAt: t,
     status: ReportStatus.pending,
     createdAt: t,
+    photoLocalPath: photoPath,
   );
 }
 
@@ -147,6 +231,7 @@ class _FakeReportsRepository implements ReportsRepository {
   final StreamController<Report> _stream = StreamController<Report>.broadcast();
   final List<(String, Classification)> updates = [];
   final List<String> failures = [];
+  final List<(String, String?, String?)> photoUpdates = [];
 
   /// Resolves once any pending DB ops the worker may issue have settled. We
   /// drive the queue with simple awaits in the worker, so a few microtask
@@ -171,6 +256,49 @@ class _FakeReportsRepository implements ReportsRepository {
   @override
   Future<void> markClassificationFailed(String id) async {
     failures.add(id);
+  }
+
+  @override
+  Future<void> updatePhotoAndVision(
+    String id, {
+    String? photoUrl,
+    String? visionSummary,
+  }) async {
+    photoUpdates.add((id, photoUrl, visionSummary));
+  }
+
+  @override
+  noSuchMethod(Invocation invocation) =>
+      throw UnimplementedError('Unexpected call ${invocation.memberName}');
+}
+
+class _FakePhotoStorage implements PhotoStorage {
+  _FakePhotoStorage({required this.url});
+  final String? url;
+  final List<(String, String?)> uploadCalls = [];
+
+  @override
+  Future<String?> uploadIfPresent(String reportId, String? localPath) async {
+    if (localPath == null) return null;
+    uploadCalls.add((reportId, localPath));
+    return url;
+  }
+
+  @override
+  noSuchMethod(Invocation invocation) =>
+      throw UnimplementedError('Unexpected call ${invocation.memberName}');
+}
+
+class _FakeVisionService implements VisionService {
+  _FakeVisionService({required this.summary});
+  final String? summary;
+  final List<String> analyzeCalls = [];
+
+  @override
+  Future<String?> analyzeImage(String? localPath) async {
+    if (localPath == null) return null;
+    analyzeCalls.add(localPath);
+    return summary;
   }
 
   @override

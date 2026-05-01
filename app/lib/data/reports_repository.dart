@@ -104,6 +104,7 @@ class ReportsRepository {
     required LatLng at,
     required DateTime occurredAt,
     required String uid,
+    String? photoLocalPath,
   }) async {
     try {
       // 1) Rate-limit check.
@@ -155,6 +156,7 @@ class ReportsRepository {
         status: ReportStatus.pending,
         synced: false,
         createdAt: now,
+        photoLocalPath: photoLocalPath,
       );
       await db.insert('reports', _reportToRow(report));
 
@@ -304,6 +306,26 @@ class ReportsRepository {
     _maybeCloseWatcher(updated);
   }
 
+  Future<void> updatePhotoAndVision(
+    String id, {
+    String? photoUrl,
+    String? visionSummary,
+  }) async {
+    final db = await _db.db;
+    final patch = <String, Object?>{};
+    if (photoUrl != null) patch['photo_url'] = photoUrl;
+    if (visionSummary != null) patch['vision_summary'] = visionSummary;
+    if (patch.isEmpty) return;
+    await db.update(
+      'reports',
+      patch,
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    final updated = await _findById(id);
+    if (updated != null) _emit(updated);
+  }
+
   /// Marks a row's `synced` flag — currently set opportunistically by the
   /// sync layer when a write commits remotely. Surface for tests / future
   /// retry logic.
@@ -394,6 +416,9 @@ Map<String, Object?> _reportToRow(Report r) => {
       'status': _statusWire(r.status),
       'synced': r.synced ? 1 : 0,
       'created_at': r.createdAt.millisecondsSinceEpoch,
+      'photo_local_path': r.photoLocalPath,
+      'photo_url': r.photoUrl,
+      'vision_summary': r.visionSummary,
     };
 
 Report _reportFromRow(Map<String, Object?> r) => Report(
@@ -417,6 +442,9 @@ Report _reportFromRow(Map<String, Object?> r) => Report(
         r['created_at'] as int,
         isUtc: true,
       ),
+      photoLocalPath: r['photo_local_path'] as String?,
+      photoUrl: r['photo_url'] as String?,
+      visionSummary: r['vision_summary'] as String?,
     );
 
 String? _categoryWire(ReportCategory? c) => switch (c) {

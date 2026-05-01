@@ -5,9 +5,12 @@
 // Optimistic UI: on submit we close the sheet immediately and surface a
 // snackbar — the actual classification continues in the background.
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 
 import '../providers.dart';
@@ -17,6 +20,7 @@ import 'voice_input.dart';
 Future<void> showReportSheet(
   BuildContext context, {
   VoiceRecognizer Function()? recognizerFactory,
+  ImagePicker? imagePicker,
 }) {
   return showModalBottomSheet<void>(
     context: context,
@@ -25,14 +29,20 @@ Future<void> showReportSheet(
     useSafeArea: true,
     builder: (_) => ReportSheet(
       recognizerFactory: recognizerFactory,
+      imagePicker: imagePicker,
     ),
   );
 }
 
 class ReportSheet extends ConsumerStatefulWidget {
-  const ReportSheet({super.key, this.recognizerFactory});
+  const ReportSheet({
+    super.key,
+    this.recognizerFactory,
+    this.imagePicker,
+  });
 
   final VoiceRecognizer Function()? recognizerFactory;
+  final ImagePicker? imagePicker;
 
   @override
   ConsumerState<ReportSheet> createState() => _ReportSheetState();
@@ -45,10 +55,12 @@ class _ReportSheetState extends ConsumerState<ReportSheet> {
 
   late final VoiceRecognizer _recognizer =
       (widget.recognizerFactory ?? SpeechToTextRecognizer.new)();
+  late final ImagePicker _picker = widget.imagePicker ?? ImagePicker();
   bool _voiceInitialized = false;
   bool _voiceAvailable = true;
   bool _listening = false;
   String _committedText = '';
+  String? _photoPath;
 
   @override
   void dispose() {
@@ -183,6 +195,7 @@ class _ReportSheetState extends ConsumerState<ReportSheet> {
       await ref.read(reportsRepositoryProvider).submitReport(
             text: text,
             at: position,
+            photoLocalPath: _photoPath,
           );
       if (!mounted) return;
       Navigator.of(context).pop();
@@ -199,6 +212,30 @@ class _ReportSheetState extends ConsumerState<ReportSheet> {
         _error = _humaniseError(e);
       });
     }
+  }
+
+  Future<void> _pickPhoto(ImageSource source) async {
+    if (_submitting) return;
+    try {
+      final picked = await _picker.pickImage(
+        source: source,
+        maxWidth: 1600,
+        maxHeight: 1600,
+        imageQuality: 80,
+      );
+      if (!mounted || picked == null) return;
+      setState(() => _photoPath = picked.path);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not attach photo.')),
+      );
+    }
+  }
+
+  void _clearPhoto() {
+    if (_submitting) return;
+    setState(() => _photoPath = null);
   }
 
   String _humaniseError(Object e) {
@@ -268,6 +305,55 @@ class _ReportSheetState extends ConsumerState<ReportSheet> {
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           ],
+          const SizedBox(height: 12),
+          if (_photoPath != null) ...[
+            Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.file(
+                    File(_photoPath!),
+                    width: 64,
+                    height: 64,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  key: const ValueKey('photoClearButton'),
+                  tooltip: 'Remove photo',
+                  icon: const Icon(Icons.close),
+                  onPressed: _submitting ? null : _clearPhoto,
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+          ],
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  key: const ValueKey('photoCameraButton'),
+                  onPressed: _submitting
+                      ? null
+                      : () => _pickPhoto(ImageSource.camera),
+                  icon: const Icon(Icons.photo_camera_outlined),
+                  label: const Text('Camera'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton.icon(
+                  key: const ValueKey('photoGalleryButton'),
+                  onPressed: _submitting
+                      ? null
+                      : () => _pickPhoto(ImageSource.gallery),
+                  icon: const Icon(Icons.photo_library_outlined),
+                  label: const Text('Gallery'),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 12),
           SizedBox(
             height: 52,
