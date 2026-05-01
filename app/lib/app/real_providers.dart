@@ -27,6 +27,7 @@ import '../core/location_service.dart';
 import '../core/result.dart';
 import '../data/local_db.dart';
 import '../data/reports_repository.dart' as data;
+import '../data/proximity_alert_service.dart';
 import '../data/reputation_sync.dart';
 import '../data/risk_engine.dart' as data;
 import '../data/sync_service.dart' as data;
@@ -92,6 +93,29 @@ final realReputationSyncProvider =
     sync: sync,
     reports: reports,
     currentUid: ref.watch(currentUserUidValueProvider),
+  );
+  await svc.start();
+  ref.onDispose(() => unawaited(svc.dispose()));
+  return svc;
+});
+
+/// Overridden in `main()` after `flutter_local_notifications` is initialized.
+/// Default no-op so widget tests don't trigger native plugin code.
+final proximityNotificationDispatcherProvider =
+    Provider<NotificationDispatcher>((ref) {
+  return ({required int id, required String title, required String body}) async {
+    debugPrint('[proximity] (no-op dispatcher) $title — $body');
+  };
+});
+
+final realProximityAlertServiceProvider =
+    FutureProvider<ProximityAlertService>((ref) async {
+  final reports = await ref.watch(realReportsRepositoryProvider.future);
+  final svc = ProximityAlertService(
+    location: ref.watch(realLocationServiceProvider),
+    risk: ref.watch(realRiskEngineProvider),
+    reports: reports,
+    dispatcher: ref.watch(proximityNotificationDispatcherProvider),
   );
   await svc.start();
   ref.onDispose(() => unawaited(svc.dispose()));

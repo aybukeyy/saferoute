@@ -16,9 +16,11 @@
 // instead of crashing the whole app.
 
 import 'dart:async';
+import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_gemma/flutter_gemma.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'ai/model_storage.dart';
@@ -27,6 +29,7 @@ import 'app/router.dart';
 import 'app/theme.dart';
 import 'data/classification_worker.dart';
 import 'data/local_db.dart';
+import 'data/proximity_alert_service.dart';
 import 'data/seed_loader.dart';
 import 'data/sync_service.dart' as data;
 import 'features/providers.dart' as ui;
@@ -50,6 +53,51 @@ Future<void> main() async {
     debugPrint('[main] LocalDb init failed: $e\n$st');
   }
 
+  // Local notifications init. Skipped under flutter_test where the native
+  // plugin channels aren't bound and would throw MissingPluginException.
+  final notificationsPlugin = FlutterLocalNotificationsPlugin();
+  NotificationDispatcher dispatcher = ({
+    required int id,
+    required String title,
+    required String body,
+  }) async {
+    debugPrint('[proximity] (no-op) $title — $body');
+  };
+  if (!Platform.environment.containsKey('FLUTTER_TEST')) {
+    try {
+      await notificationsPlugin.initialize(
+        const InitializationSettings(
+          android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+          iOS: DarwinInitializationSettings(),
+        ),
+      );
+      dispatcher = ({
+        required int id,
+        required String title,
+        required String body,
+      }) async {
+        await notificationsPlugin.show(
+          id,
+          title,
+          body,
+          const NotificationDetails(
+            android: AndroidNotificationDetails(
+              kProximityChannelId,
+              'Proximity alerts',
+              channelDescription:
+                  'Warns when you enter a high-risk area near recent reports.',
+              importance: Importance.high,
+              priority: Priority.high,
+            ),
+            iOS: DarwinNotificationDetails(),
+          ),
+        );
+      };
+    } catch (e) {
+      debugPrint('[main] FlutterLocalNotifications init failed: $e');
+    }
+  }
+
   // Step 2 — Best-effort Firebase + anonymous auth.
   String userUid = 'local-only';
   try {
@@ -65,6 +113,7 @@ Future<void> main() async {
       // Pin shared singletons.
       localDbProvider.overrideWithValue(localDb),
       currentUserUidValueProvider.overrideWithValue(userUid),
+      proximityNotificationDispatcherProvider.overrideWithValue(dispatcher),
 
       // Bridge the UI `*Like` interfaces to the real implementations.
       ui.locationServiceProvider
@@ -143,6 +192,14 @@ Future<void> main() async {
       await container.read(realReputationSyncProvider.future);
     } catch (e, st) {
       debugPrint('[main] reputation sync boot failed: $e\n$st');
+    }
+  }());
+
+  unawaited(() async {
+    try {
+      await container.read(realProximityAlertServiceProvider.future);
+    } catch (e, st) {
+      debugPrint('[main] proximity alert boot failed: $e\n$st');
     }
   }());
 
