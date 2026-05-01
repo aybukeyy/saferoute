@@ -55,6 +55,7 @@ dependencies:
   # UI module — animation utility. Used opt-in by features/* widgets;
   # nothing else depends on it.
   flutter_animate: ^4.5.2
+  speech_to_text: ^7.0.0
   flutter_local_notifications: ^17.0.0
 
 dev_dependencies:

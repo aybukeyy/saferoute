@@ -8,6 +8,10 @@
 	<string>Safe Route uses your location to attach reports and find safer routes.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Safe Route uses your location to attach reports and find safer routes.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Safe Route uses your microphone to let you submit reports by voice.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Safe Route transcribes your speech into a report on this device.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

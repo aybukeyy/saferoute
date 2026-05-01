@@ -8,39 +8,165 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:speech_to_text/speech_recognition_result.dart';
 
 import '../providers.dart';
+import 'voice_input.dart';
 
 /// Convenience opener — keeps the call site in MapScreen short.
-Future<void> showReportSheet(BuildContext context) {
+Future<void> showReportSheet(
+  BuildContext context, {
+  VoiceRecognizer Function()? recognizerFactory,
+}) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
     useSafeArea: true,
-    builder: (_) => const _ReportSheet(),
+    builder: (_) => ReportSheet(
+      recognizerFactory: recognizerFactory,
+    ),
   );
 }
 
-class _ReportSheet extends ConsumerStatefulWidget {
-  const _ReportSheet();
+class ReportSheet extends ConsumerStatefulWidget {
+  const ReportSheet({super.key, this.recognizerFactory});
+
+  final VoiceRecognizer Function()? recognizerFactory;
 
   @override
-  ConsumerState<_ReportSheet> createState() => _ReportSheetState();
+  ConsumerState<ReportSheet> createState() => _ReportSheetState();
 }
 
-class _ReportSheetState extends ConsumerState<_ReportSheet> {
+class _ReportSheetState extends ConsumerState<ReportSheet> {
   final _controller = TextEditingController();
   bool _submitting = false;
   String? _error;
 
+  late final VoiceRecognizer _recognizer =
+      (widget.recognizerFactory ?? SpeechToTextRecognizer.new)();
+  bool _voiceInitialized = false;
+  bool _voiceAvailable = true;
+  bool _listening = false;
+  String _committedText = '';
+
   @override
   void dispose() {
+    if (_listening) {
+      unawaitedStop();
+    }
     _controller.dispose();
     super.dispose();
   }
 
+  void unawaitedStop() {
+    _recognizer.stop();
+  }
+
+  Future<void> _ensureVoiceInitialized() async {
+    if (_voiceInitialized) return;
+    try {
+      final ok = await _recognizer.initialize(
+        onError: (_) => _handleVoiceFailure(),
+        onStatus: (status) {
+          if (!mounted) return;
+          if (status == 'done' || status == 'notListening') {
+            if (_listening) {
+              setState(() => _listening = false);
+              _committedText = _controller.text;
+            }
+          }
+        },
+      );
+      if (!mounted) return;
+      setState(() {
+        _voiceInitialized = true;
+        _voiceAvailable = ok;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _voiceInitialized = true;
+        _voiceAvailable = false;
+      });
+    }
+  }
+
+  void _handleVoiceFailure() {
+    if (!mounted) return;
+    setState(() {
+      _listening = false;
+      _voiceAvailable = false;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Voice input unavailable. Type your report.'),
+      ),
+    );
+  }
+
+  Future<void> _toggleListening() async {
+    if (_listening) {
+      await _recognizer.stop();
+      if (!mounted) return;
+      setState(() => _listening = false);
+      _committedText = _controller.text;
+      return;
+    }
+
+    await _ensureVoiceInitialized();
+    if (!mounted || !_voiceAvailable) {
+      _handleVoiceFailure();
+      return;
+    }
+
+    final lang = Localizations.maybeLocaleOf(context)?.languageCode ?? 'en';
+    final localeId = lang == 'tr' ? 'tr_TR' : 'en_US';
+    _committedText = _controller.text;
+
+    try {
+      await _recognizer.listen(
+        onResult: _handleResult,
+        localeId: localeId,
+        pauseFor: const Duration(seconds: 8),
+      );
+      if (!mounted) return;
+      setState(() => _listening = true);
+    } catch (_) {
+      _handleVoiceFailure();
+    }
+  }
+
+  void _handleResult(SpeechRecognitionResult result) {
+    if (!mounted) return;
+    final recognized = result.recognizedWords.trim();
+    if (recognized.isEmpty) return;
+
+    if (result.finalResult) {
+      final base = _committedText.trim();
+      final merged = base.isEmpty ? recognized : '$base $recognized';
+      _committedText = merged;
+      _controller.value = TextEditingValue(
+        text: merged,
+        selection: TextSelection.collapsed(offset: merged.length),
+      );
+      setState(() => _listening = false);
+    } else {
+      final base = _committedText.trim();
+      final preview = base.isEmpty ? recognized : '$base $recognized';
+      _controller.value = TextEditingValue(
+        text: preview,
+        selection: TextSelection.collapsed(offset: preview.length),
+      );
+    }
+  }
+
   Future<void> _submit() async {
+    if (_listening) {
+      await _recognizer.stop();
+      if (!mounted) return;
+      setState(() => _listening = false);
+    }
     final text = _controller.text.trim();
     if (text.isEmpty) {
       setState(() => _error = 'Type one sentence describing what you saw.');
@@ -92,6 +218,11 @@ class _ReportSheetState extends ConsumerState<_ReportSheet> {
     final position = positionAsync.whenOrNull(data: (p) => p);
     final padding = MediaQuery.of(context).viewInsets;
 
+    final showMic = !_voiceInitialized || _voiceAvailable;
+    final micColor = _listening
+        ? Theme.of(context).colorScheme.error
+        : Theme.of(context).colorScheme.onSurfaceVariant;
+
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 0, 20, 20 + padding.bottom),
       child: Column(
@@ -113,9 +244,20 @@ class _ReportSheetState extends ConsumerState<_ReportSheet> {
             maxLength: 280,
             textInputAction: TextInputAction.done,
             inputFormatters: [LengthLimitingTextInputFormatter(280)],
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               hintText: 'Describe what happened in one sentence…',
-              border: OutlineInputBorder(),
+              border: const OutlineInputBorder(),
+              suffixIcon: showMic
+                  ? IconButton(
+                      key: const ValueKey('voiceMicButton'),
+                      tooltip: _listening ? 'Stop voice input' : 'Voice input',
+                      icon: Icon(
+                        _listening ? Icons.mic : Icons.mic_none,
+                        color: micColor,
+                      ),
+                      onPressed: _submitting ? null : _toggleListening,
+                    )
+                  : null,
             ),
             onSubmitted: (_) => _submit(),
           ),
