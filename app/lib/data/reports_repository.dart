@@ -185,6 +185,62 @@ class ReportsRepository {
     }
   }
 
+  /// Writes a row that is already classified (e.g. user-triggered emergency)
+  /// straight to CLASSIFIED status, bypassing the AI worker. Skips the
+  /// rate-limit check because this path represents a user safety action.
+  /// Mirrors and recomputes the cell exactly like [updateClassification].
+  Future<Result<Report, SubmitReportError>> submitClassified({
+    required String text,
+    required LatLng at,
+    required DateTime occurredAt,
+    required String uid,
+    required Classification classification,
+  }) async {
+    try {
+      final db = await _db.db;
+      final now = DateTime.now().toUtc();
+      await db.insert(
+        'users',
+        {
+          'uid': uid,
+          'reputation': 1.0,
+          'created_at': now.millisecondsSinceEpoch,
+        },
+        conflictAlgorithm: ConflictAlgorithm.ignore,
+      );
+      final report = Report(
+        id: _uuid.v4(),
+        uid: uid,
+        text: text,
+        lat: at.latitude,
+        lng: at.longitude,
+        geohash7: Geohash.encode(at.latitude, at.longitude, precision: 7),
+        occurredAt: occurredAt,
+        category: classification.category,
+        riskLevel: classification.riskLevel,
+        confidence: classification.confidence,
+        explanation: classification.explanation,
+        status: ReportStatus.classified,
+        synced: false,
+        createdAt: now,
+      );
+      await db.insert('reports', _reportToRow(report));
+      await _risk.recomputeCell(report.geohash7, now);
+      final cellRow = await _findCell(report.geohash7);
+      if (cellRow != null) {
+        unawaited(_sync.mirrorRiskCell(cellRow));
+      }
+      unawaited(_sync.mirrorReport(report));
+      _emit(report);
+      if (!_uidController.isClosed) {
+        _uidController.add(uid);
+      }
+      return Ok(report);
+    } catch (e, st) {
+      return Err(UnexpectedSubmitError(e, st));
+    }
+  }
+
   /// Emits the current row, then any subsequent updates pushed through
   /// [updateClassification]. Closes once status reaches CLASSIFIED or
   /// REJECTED to avoid leaking subscribers.

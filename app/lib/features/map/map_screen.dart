@@ -13,6 +13,9 @@ import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../core/geohash.dart';
+import '../emergency/emergency_fab.dart';
+import '../emergency/emergency_providers.dart';
+import '../emergency/emergency_settings_screen.dart';
 import '../providers.dart';
 import '../report/report_sheet.dart';
 import 'heatmap_painter.dart';
@@ -106,9 +109,20 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             onSelected: (v) {
               if (v == 'about') context.push('/about');
               if (v == 'feed') context.push('/feed');
+              if (v == 'emergency_contact') {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const EmergencySettingsScreen(),
+                  ),
+                );
+              }
             },
             itemBuilder: (_) => const [
               PopupMenuItem(value: 'feed', child: Text('Recent reports')),
+              PopupMenuItem(
+                value: 'emergency_contact',
+                child: Text('Acil durum kişisi / Emergency contact'),
+              ),
               PopupMenuItem(value: 'about', child: Text('About')),
             ],
           ),
@@ -171,6 +185,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               label: const Text('Report'),
               icon: const Icon(Icons.add_alert),
               onPressed: () => showReportSheet(context),
+            ),
+          ),
+          // Emergency FAB above the report FAB.
+          Positioned(
+            right: 16,
+            bottom: 88,
+            child: EmergencyFab(
+              actionBuilder: ref.read(emergencyActionBuilderProvider),
             ),
           ),
         ],
