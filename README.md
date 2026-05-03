@@ -7,6 +7,13 @@ yol seçimini Gemma 4 modeli ile cihazda (offline) açıklar. Harita: OSM /
 flutter_map; backend: Firebase (Firestore + Anonymous Auth); LLM:
 flutter_gemma + MediaPipe Inference.
 
+## Ekran Görüntüleri
+
+| Risk Haritası | Rota Planlama | Rapor Sayfası |
+|:---:|:---:|:---:|
+| ![Risk Map](docs/screenshots/riskmap.png) | ![Route](docs/screenshots/route.png) | ![Report](docs/screenshots/reportpage.png) |
+| Hex hücreli risk heatmap, canlı pulse animasyonu | En kısa (gri) vs en güvenli (yeşil) yol karşılaştırması | Rapor gönderme — metin / ses / fotoğraf |
+
 ## Stack
 
 - **Flutter** ^3.11.5 (Dart 3)
