@@ -22,6 +22,7 @@ import '../../models/route_result.dart';
 import '../explanation/explanation_card.dart';
 import '../providers.dart';
 import 'route_planner_screen.dart';
+import 'route_share_control.dart';
 import 'tts_navigator.dart';
 
 /// Length of the safe-route reveal sweep. Tuned for the video — keep at
@@ -60,6 +61,13 @@ class _RouteDetailScreenState extends ConsumerState<RouteDetailScreen> {
             tooltip: _muted ? 'Unmute voice' : 'Mute voice',
             icon: Icon(_muted ? Icons.volume_off : Icons.volume_up),
             onPressed: _toggleMute,
+          ),
+          routeAsync.maybeWhen(
+            data: (result) => RouteShareControl(
+              request: widget.request,
+              result: result,
+            ),
+            orElse: () => const SizedBox.shrink(),
           ),
         ],
       ),

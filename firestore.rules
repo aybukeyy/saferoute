@@ -89,6 +89,44 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Live route-share docs. Public read so any link recipient can watch the
+    // owner's marker move, but only the owner can create/update/end the doc.
+    // expiresAt is server-bounded to <= now + 24h so a malicious client can't
+    // park a doc forever.
+    match /route_shares/{shareId} {
+      function shareCreatePayloadValid() {
+        let d = request.resource.data;
+        return d.ownerUid is string
+            && d.ownerUid == request.auth.uid
+            && d.from is map
+            && d.to is map
+            && d.safestPath is list
+            && d.startedAt is timestamp
+            && d.etaMinutes is number
+            && d.currentPosition is map
+            && d.updatedAt is timestamp
+            && d.expiresAt is timestamp
+            && d.expiresAt > request.time
+            && d.expiresAt < request.time + duration.value(24, 'h');
+      }
+
+      function shareUpdateOnlyMutatesAllowed() {
+        return request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['currentPosition', 'updatedAt', 'ended', 'message']);
+      }
+
+      allow read: if true;
+
+      allow create: if isSignedIn() && shareCreatePayloadValid();
+
+      allow update: if isSignedIn()
+                    && resource.data.ownerUid == request.auth.uid
+                    && shareUpdateOnlyMutatesAllowed();
+
+      allow delete: if isSignedIn()
+                    && resource.data.ownerUid == request.auth.uid;
+    }
+
     match /users/{uid} {
       allow read: if true;
 
