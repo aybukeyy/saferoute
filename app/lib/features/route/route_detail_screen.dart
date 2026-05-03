@@ -9,6 +9,8 @@
 // - Bottom peek sheet exposes "+180 m, +2 min" trade-off and the "Why is
 //   this safer?" CTA → ExplanationCard.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,58 +22,132 @@ import '../../models/route_result.dart';
 import '../explanation/explanation_card.dart';
 import '../providers.dart';
 import 'route_planner_screen.dart';
+import 'tts_navigator.dart';
 
 /// Length of the safe-route reveal sweep. Tuned for the video — keep at
 /// 600 ms unless re-shooting Scene 6.
 const Duration kSafeRouteSweepDuration = Duration(milliseconds: 600);
 
-class RouteDetailScreen extends ConsumerWidget {
+class RouteDetailScreen extends ConsumerStatefulWidget {
   const RouteDetailScreen({super.key, required this.request});
 
   final RouteRequest request;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RouteDetailScreen> createState() => _RouteDetailScreenState();
+}
+
+class _RouteDetailScreenState extends ConsumerState<RouteDetailScreen> {
+  bool _muted = false;
+
+  void _toggleMute() {
+    setState(() => _muted = !_muted);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final routeAsync = ref.watch(routeResultProvider(RouteQuery(
-      from: request.from,
-      to: request.to,
-      time: request.time,
+      from: widget.request.from,
+      to: widget.request.to,
+      time: widget.request.time,
     )));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Route')),
+      appBar: AppBar(
+        title: const Text('Route'),
+        actions: [
+          IconButton(
+            tooltip: _muted ? 'Unmute voice' : 'Mute voice',
+            icon: Icon(_muted ? Icons.volume_off : Icons.volume_up),
+            onPressed: _toggleMute,
+          ),
+        ],
+      ),
       body: routeAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Routing failed: $e')),
-        data: (result) => _RouteContent(request: request, result: result),
+        data: (result) => _RouteContent(
+          request: widget.request,
+          result: result,
+          muted: _muted,
+        ),
       ),
     );
   }
 }
 
-class _RouteContent extends StatefulWidget {
-  const _RouteContent({required this.request, required this.result});
+class _RouteContent extends ConsumerStatefulWidget {
+  const _RouteContent({
+    required this.request,
+    required this.result,
+    required this.muted,
+  });
 
   final RouteRequest request;
   final RouteResult result;
+  final bool muted;
 
   @override
-  State<_RouteContent> createState() => _RouteContentState();
+  ConsumerState<_RouteContent> createState() => _RouteContentState();
 }
 
-class _RouteContentState extends State<_RouteContent>
+class _RouteContentState extends ConsumerState<_RouteContent>
     with SingleTickerProviderStateMixin {
   late final AnimationController _sweep;
+  TtsNavigator? _navigator;
+  ProviderSubscription<AsyncValue<LatLng>>? _locationSub;
+  StreamController<LatLng>? _positionController;
 
   @override
   void initState() {
     super.initState();
     _sweep = AnimationController(vsync: this, duration: kSafeRouteSweepDuration)
       ..forward();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrapNavigator());
+  }
+
+  void _bootstrapNavigator() {
+    if (!mounted) return;
+    final lang = Localizations.maybeLocaleOf(context)?.languageCode == 'tr'
+        ? 'tr'
+        : 'en';
+    final controller = StreamController<LatLng>.broadcast();
+    _positionController = controller;
+    final navigator = TtsNavigator(
+      tts: FlutterTtsEngine(),
+      polyline: widget.result.safestPath,
+      avoidedCells: widget.result.avoidedCells,
+      languageCode: lang,
+    );
+    _navigator = navigator;
+    if (widget.muted) navigator.mute();
+    navigator.start(controller.stream);
+    _locationSub = ref.listenManual<AsyncValue<LatLng>>(
+      currentLocationProvider,
+      (prev, next) {
+        next.whenData(controller.add);
+      },
+      fireImmediately: true,
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant _RouteContent old) {
+    super.didUpdateWidget(old);
+    if (widget.muted != old.muted) {
+      if (widget.muted) {
+        _navigator?.mute();
+      } else {
+        _navigator?.unmute();
+      }
+    }
   }
 
   @override
   void dispose() {
+    _locationSub?.close();
+    _navigator?.dispose();
+    _positionController?.close();
     _sweep.dispose();
     super.dispose();
   }
