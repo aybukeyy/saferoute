@@ -19,7 +19,6 @@ import '../emergency/emergency_settings_screen.dart';
 import '../providers.dart';
 import '../report/report_sheet.dart';
 import 'heatmap_painter.dart';
-import 'pulse_animator.dart';
 
 /// Default map center used until GPS resolves. Beşiktaş, Istanbul — matches
 /// the bundled demo seed (`assets/seed_reports.json`) and the recommended
@@ -36,20 +35,14 @@ class MapScreen extends ConsumerStatefulWidget {
 
 class _MapScreenState extends ConsumerState<MapScreen> {
   final _mapController = MapController();
-  final _pulseController = PulseLayerController();
 
   // Latest visible bbox; recomputed when the map idles. Used as the family
-  // key for heatmap + pulse providers.
+  // key for the heatmap provider.
   BoundingBox? _bbox;
-
-  // Tracks which sync subscription bbox we already wired so we don't
-  // subscribe twice on rebuild.
-  BoundingBox? _wiredBbox;
 
   @override
   void dispose() {
     _mapController.dispose();
-    _pulseController.dispose();
     super.dispose();
   }
 
@@ -84,14 +77,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       data: (p) => p,
       orElse: () => kDefaultMapCenter,
     );
-
-    // Wire the pulse stream once we know the bbox.
-    if (_bbox != null && _bbox != _wiredBbox) {
-      _wiredBbox = _bbox;
-      ref.listen(cellPulseStreamProvider(_bbox!), (prev, next) {
-        next.whenData((pulse) => _pulseController.pulseCell(pulse.geohash7));
-      });
-    }
 
     return Scaffold(
       appBar: AppBar(
@@ -147,7 +132,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 maxZoom: 19,
               ),
               if (_bbox != null) _HeatmapBinder(bbox: _bbox!),
-              PulseLayer(controller: _pulseController),
               if (positionAsync.hasValue)
                 MarkerLayer(
                   markers: [
@@ -160,6 +144,35 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   ],
                 ),
             ],
+          ),
+          // Top-left "center on me" FAB.
+          Positioned(
+            left: 16,
+            top: 16,
+            child: FloatingActionButton.small(
+              heroTag: 'fab-locate',
+              backgroundColor: Colors.white,
+              foregroundColor: Theme.of(context).colorScheme.primary,
+              tooltip: 'Konumuma git / Center on me',
+              onPressed: () {
+                final pos = ref.read(currentLocationProvider).maybeWhen(
+                      data: (p) => p,
+                      orElse: () => null,
+                    );
+                if (pos == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Konum henüz hazır değil / Location not ready yet'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                  return;
+                }
+                _mapController.move(pos, 16);
+                _refreshBbox();
+              },
+              child: const Icon(Icons.my_location),
+            ),
           ),
           // Bottom-left "route" FAB.
           Positioned(

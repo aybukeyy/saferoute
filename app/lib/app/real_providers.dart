@@ -247,14 +247,16 @@ class _RiskEngineAdapter implements ui.RiskEngineLike {
         _cache[bbox] = snapshot;
         debugPrint('[_RiskEngineAdapter] kick DONE: ${snapshot.length} cells; '
             'cache size now ${_cache.length}');
-        // Defer invalidate so we're outside the provider's build cycle —
-        // direct invalidate from inside it triggers CircularDependencyError.
+        // Bump the standalone tick StateProvider — heatmapDataProvider
+        // watches it so the family rebuilds and reads the fresh cache.
+        // Invalidating heatmapDataProvider directly from here would
+        // trigger CircularDependencyError because this adapter is one of
+        // its transitive dependencies.
         Future.microtask(() {
           try {
-            _ref.invalidate(ui.heatmapDataProvider(bbox));
-            debugPrint('[_RiskEngineAdapter] invalidated heatmapDataProvider');
+            _ref.read(ui.heatmapRefreshTickProvider.notifier).bump();
           } catch (e) {
-            debugPrint('[_RiskEngineAdapter] invalidate failed: $e');
+            debugPrint('[_RiskEngineAdapter] tick bump failed: $e');
           }
         });
       } catch (e, st) {

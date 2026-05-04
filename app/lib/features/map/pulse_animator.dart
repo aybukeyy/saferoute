@@ -11,6 +11,9 @@
 //   t = 1200   -> 2000 ms   : red sustained, alpha fades 220 -> 0
 // Total: 2.0 s exactly. onCompleted fires on dismiss.
 
+import 'dart:math' as math;
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -85,15 +88,24 @@ class PulseAnimatorState extends State<PulseAnimator>
     final bounds = Geohash.bounds(widget.geohash7);
     final swPx = camera.latLngToScreenOffset(LatLng(bounds.minLat, bounds.minLng));
     final nePx = camera.latLngToScreenOffset(LatLng(bounds.maxLat, bounds.maxLng));
-    final rect = Rect.fromLTRB(swPx.dx, nePx.dy, nePx.dx, swPx.dy);
+    final cx = (swPx.dx + nePx.dx) / 2;
+    final cy = (swPx.dy + nePx.dy) / 2;
+    final halfW = (nePx.dx - swPx.dx).abs() / 2;
+    final halfH = (swPx.dy - nePx.dy).abs() / 2;
+    // 2× the cell's linear extent → ~4× area, matching the "en az 4 katı"
+    // brief. Hexagon circum-radius = scale × the cell's smaller half-axis.
+    const scale = 2.0;
+    final r = math.min(halfW, halfH) * scale;
 
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, _) {
         final (color, alpha) = sampleAt(_controller.value);
         return CustomPaint(
-          painter: _PulseRectPainter(
-            rect: rect,
+          painter: _PulseHexPainter(
+            cx: cx,
+            cy: cy,
+            r: r,
             color: color.withValues(alpha: alpha / 255),
           ),
           size: Size.infinite,
@@ -103,26 +115,51 @@ class PulseAnimatorState extends State<PulseAnimator>
   }
 }
 
-class _PulseRectPainter extends CustomPainter {
-  _PulseRectPainter({required this.rect, required this.color});
+class _PulseHexPainter extends CustomPainter {
+  _PulseHexPainter({
+    required this.cx,
+    required this.cy,
+    required this.r,
+    required this.color,
+  });
 
-  final Rect rect;
+  final double cx;
+  final double cy;
+  final double r;
   final Color color;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final p = Paint()..color = color..style = PaintingStyle.fill;
-    canvas.drawRect(rect, p);
+    final hex = _hexagonPath(cx, cy, r);
+    final fill = Paint()..color = color..style = PaintingStyle.fill;
+    canvas.drawPath(hex, fill);
     final stroke = Paint()
       ..color = color.withValues(alpha: 1.0)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0;
-    canvas.drawRect(rect, stroke);
+      ..strokeWidth = 2.5;
+    canvas.drawPath(hex, stroke);
+  }
+
+  static ui.Path _hexagonPath(double cx, double cy, double r) {
+    final path = ui.Path();
+    const step = math.pi / 3.0;
+    for (var i = 0; i < 6; i++) {
+      final angle = step * i;
+      final x = cx + r * math.cos(angle);
+      final y = cy + r * math.sin(angle);
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+    path.close();
+    return path;
   }
 
   @override
-  bool shouldRepaint(covariant _PulseRectPainter old) =>
-      old.color != color || old.rect != rect;
+  bool shouldRepaint(covariant _PulseHexPainter old) =>
+      old.color != color || old.cx != cx || old.cy != cy || old.r != r;
 }
 
 /// flutter_map layer that hosts a stack of in-flight pulses. The MapScreen

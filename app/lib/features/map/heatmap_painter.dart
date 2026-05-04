@@ -11,6 +11,9 @@
 //    geohashes, so we only run the geohash → bounds decode in the data
 //    layer, not in paint().
 
+import 'dart:math' as math;
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -49,35 +52,36 @@ class HeatmapPainter extends CustomPainter {
   final List<HeatmapCell> cells;
   final MapCamera camera;
 
+  /// Maps the cumulative additive intensity at a pixel to a "demand heatmap"
+  /// colour ramp (transparent → cool yellow → warm orange → hot red). Returned
+  /// only by [colorForScore] for tests that still want a per-cell colour.
   static Color colorForScore(double score) {
-    if (score < 0.25) return kRiskLow.withValues(alpha: 80 / 255);
-    if (score < 0.5) {
-      return Color.lerp(kRiskLow, kRiskMid, (score - 0.25) / 0.25)!
-          .withValues(alpha: 120 / 255);
+    if (score <= 0) return kRiskLow.withValues(alpha: 0);
+    if (score < 0.33) {
+      return Color.lerp(kRiskLow, kRiskMid, score / 0.33)!
+          .withValues(alpha: 180 / 255);
     }
-    if (score < 0.75) {
-      return Color.lerp(kRiskMid, kRiskHigh, (score - 0.5) / 0.25)!
-          .withValues(alpha: 150 / 255);
+    if (score < 0.66) {
+      return Color.lerp(kRiskMid, kRiskHigh, (score - 0.33) / 0.33)!
+          .withValues(alpha: 220 / 255);
     }
-    return kRiskHigh.withValues(alpha: 180 / 255);
+    return kRiskHigh.withValues(alpha: 240 / 255);
   }
 
+  /// Demand-style heatmap: each cell paints a soft radial gradient blob,
+  /// blobs accumulate via [BlendMode.plus] so overlapping cells brighten and
+  /// dense regions naturally bloom into a hot core. No hex outlines, no
+  /// per-cell borders — the texture comes from the additive overlap.
   @override
   void paint(Canvas canvas, Size size) {
     if (cells.isEmpty) return;
-
-    // Cull cells outside the visible viewport. Cheap rectangle test against
-    // the camera's visible bounds in lat/lng before projecting.
     final visible = camera.visibleBounds;
 
-    final fillPaint = Paint()..style = PaintingStyle.fill;
-    final borderPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5
-      ..color = kRiskHigh;
+    // Render the heatmap into an offscreen layer so [BlendMode.plus] only
+    // mixes the blobs with each other, not with the underlying tiles.
+    canvas.saveLayer(Offset.zero & size, Paint());
 
     for (final cell in cells) {
-      // Quick reject if cell is entirely outside the visible bbox.
       if (cell.maxLat < visible.south ||
           cell.minLat > visible.north ||
           cell.maxLng < visible.west ||
@@ -85,26 +89,40 @@ class HeatmapPainter extends CustomPainter {
         continue;
       }
 
-      final swLatLng = LatLng(cell.minLat, cell.minLng);
-      final neLatLng = LatLng(cell.maxLat, cell.maxLng);
-      final swPx = camera.latLngToScreenOffset(swLatLng);
-      final nePx = camera.latLngToScreenOffset(neLatLng);
+      final swPx = camera.latLngToScreenOffset(
+          LatLng(cell.minLat, cell.minLng));
+      final nePx = camera.latLngToScreenOffset(
+          LatLng(cell.maxLat, cell.maxLng));
+      final cx = (swPx.dx + nePx.dx) / 2;
+      final cy = (swPx.dy + nePx.dy) / 2;
+      final halfW = (nePx.dx - swPx.dx).abs() / 2;
+      final halfH = (swPx.dy - nePx.dy).abs() / 2;
+      // Generous radius so neighbouring blobs overlap heavily — that overlap
+      // is what produces the "denser = redder" bloom.
+      final cellSize = math.max(halfW, halfH);
+      final radius = cellSize * 2.4;
 
-      // In screen space, NE has smaller y than SW (north is up).
-      final rect = Rect.fromLTRB(
-        swPx.dx,
-        nePx.dy,
-        nePx.dx,
-        swPx.dy,
-      );
+      // Per-blob intensity scales with score. Low scores stay dim so cool
+      // areas don't pollute the additive sum.
+      final intensity = cell.score.clamp(0.0, 1.0).toDouble();
+      // Squeeze toward the warm end of the ramp for high-density cells.
+      final hot = Color.lerp(kRiskMid, kRiskHigh, intensity)!;
 
-      fillPaint.color = colorForScore(cell.score);
-      canvas.drawRect(rect, fillPaint);
-
-      if (cell.score >= 0.5) {
-        canvas.drawRect(rect, borderPaint);
-      }
+      final paint = Paint()
+        ..blendMode = BlendMode.plus
+        ..shader = ui.Gradient.radial(
+          Offset(cx, cy),
+          radius,
+          [
+            hot.withValues(alpha: (0.55 * intensity).clamp(0.05, 0.6)),
+            hot.withValues(alpha: 0),
+          ],
+          const [0.0, 1.0],
+        );
+      canvas.drawCircle(Offset(cx, cy), radius, paint);
     }
+
+    canvas.restore();
   }
 
   @override

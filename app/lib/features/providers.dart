@@ -153,16 +153,28 @@ final currentUserUidProvider = FutureProvider<String>((ref) {
   return ref.watch(syncServiceProvider).ensureAnonymousAuth();
 });
 
+/// Bumped by the real heatmap adapter every time a fresh snapshot lands in
+/// its cache. `heatmapDataProvider` watches this so the UI rebuilds without
+/// the adapter having to invalidate `heatmapDataProvider` itself (which
+/// triggers a CircularDependencyError because the adapter is one of the
+/// family's transitive dependencies).
+class HeatmapRefreshTick extends Notifier<int> {
+  @override
+  int build() => 0;
+  void bump() => state++;
+}
+
+final heatmapRefreshTickProvider =
+    NotifierProvider<HeatmapRefreshTick, int>(HeatmapRefreshTick.new);
+
 /// Heatmap data for the visible bbox. The UI keeps the bbox stable within a
 /// camera idle window so this provider doesn't recompute on every gesture
 /// frame.
 final heatmapDataProvider =
     Provider.family<Map<String, double>, BoundingBox>((ref, bbox) {
+  // Force a rebuild whenever the adapter's background fetch completes.
+  ref.watch(heatmapRefreshTickProvider);
   final engine = ref.watch(riskEngineProvider);
-  // We deliberately do NOT thread DateTime.now() through the family key —
-  // doing so would invalidate the cache every microsecond. The map screen
-  // refreshes itself via a timer (every 30 s) by `ref.invalidate`-ing this
-  // family at the right cadence.
   return engine.heatmap(bbox, DateTime.now());
 });
 
