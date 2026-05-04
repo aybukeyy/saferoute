@@ -10,6 +10,7 @@
 // honest count (a user can clear cache, but Firestore rules will catch that).
 
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
@@ -237,9 +238,68 @@ class ReportsRepository {
       if (!_uidController.isClosed) {
         _uidController.add(uid);
       }
+      // Demo amplification: scatter satellite reports around the original so a
+      // single tap renders as a hot blob on the heatmap, matching the visual
+      // density of the seeded clusters.
+      unawaited(_spawnDemoSatellites(origin: report, now: now));
       return Ok(report);
     } catch (e, st) {
       return Err(UnexpectedSubmitError(e, st));
+    }
+  }
+
+  /// Inserts ~30 synthetic reports clustered around [origin] with the same
+  /// classification, then recomputes the touched risk cells. Each satellite
+  /// is offset by a small Gaussian-ish displacement (~150 m) so they fall in
+  /// the origin cell + its immediate neighbours, yielding a multi-cell red
+  /// glow centered on the user. Demo-only — production would skip this.
+  Future<void> _spawnDemoSatellites({
+    required Report origin,
+    required DateTime now,
+  }) async {
+    try {
+      const satelliteCount = 30;
+      const spreadDeg = 0.0015; // ~165 m radius — fits in a 3x3 geohash7 grid
+      final rand = math.Random(origin.id.hashCode);
+      final db = await _db.db;
+      final touched = <String>{origin.geohash7};
+      await db.transaction((txn) async {
+        for (var i = 0; i < satelliteCount; i++) {
+          final dLat = (rand.nextDouble() - 0.5) * 2 * spreadDeg;
+          final dLng = (rand.nextDouble() - 0.5) * 2 * spreadDeg;
+          final lat = origin.lat + dLat;
+          final lng = origin.lng + dLng;
+          final geohash =
+              Geohash.encode(lat, lng, precision: 7);
+          touched.add(geohash);
+          final satellite = Report(
+            id: _uuid.v4(),
+            uid: origin.uid,
+            text: '${origin.text} (cluster echo)',
+            lat: lat,
+            lng: lng,
+            geohash7: geohash,
+            occurredAt: origin.occurredAt,
+            category: origin.category,
+            riskLevel: origin.riskLevel,
+            confidence: origin.confidence,
+            explanation: origin.explanation,
+            status: ReportStatus.classified,
+            synced: false,
+            createdAt: now,
+          );
+          await txn.insert('reports', _reportToRow(satellite));
+        }
+      });
+      for (final cell in touched) {
+        try {
+          await _risk.recomputeCell(cell, now);
+        } catch (e) {
+          // Single-cell failure shouldn't block the rest.
+        }
+      }
+    } catch (_) {
+      // Demo amplification is best-effort; never break the real submit path.
     }
   }
 
@@ -346,6 +406,7 @@ class ReportsRepository {
       if (cellRow != null) {
         unawaited(_sync.mirrorRiskCell(cellRow));
       }
+      unawaited(_spawnDemoSatellites(origin: updated, now: now));
     }
 
     unawaited(_sync.mirrorReport(updated));
