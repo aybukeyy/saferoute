@@ -20,6 +20,8 @@ import '../../app/theme.dart';
 import '../../core/geohash.dart';
 import '../../models/route_result.dart';
 import '../explanation/explanation_card.dart';
+import '../map/heatmap_painter.dart';
+import '../map/map_screen.dart' show kDemoHeatmapBbox;
 import '../providers.dart';
 import 'route_planner_screen.dart';
 import 'route_share_control.dart';
@@ -196,6 +198,9 @@ class _RouteContentState extends ConsumerState<_RouteContent>
               urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
               userAgentPackageName: 'com.evam.saferoute',
             ),
+            // Risk heatmap underlay — same demand-style glow as MapScreen so
+            // the user sees why the safe route detoured.
+            const _RouteHeatmapBinder(),
             // Shortest route — instant.
             PolylineLayer(
               polylines: [
@@ -223,10 +228,9 @@ class _RouteContentState extends ConsumerState<_RouteContent>
                 );
               },
             ),
-            // Avoided cells — outline + floating label.
+            // Avoided cells — circular danger badges over the heatmap glow.
             _AvoidedCellsOverlay(
               cells: widget.result.avoidedCells,
-              labels: widget.result.explanationCard.avoidedCellSummaries,
               progress: _sweep,
             ),
             // Endpoints.
@@ -303,12 +307,10 @@ class _RouteContentState extends ConsumerState<_RouteContent>
 class _AvoidedCellsOverlay extends StatelessWidget {
   const _AvoidedCellsOverlay({
     required this.cells,
-    required this.labels,
     required this.progress,
   });
 
   final List<String> cells;
-  final Map<String, String> labels;
   final Animation<double> progress;
 
   @override
@@ -319,75 +321,100 @@ class _AvoidedCellsOverlay extends StatelessWidget {
       animation: progress,
       builder: (_, _) {
         final markers = <Marker>[];
-        final polylines = <Polyline>[];
         for (var i = 0; i < cells.length; i++) {
           final gh = cells[i];
           final b = Geohash.bounds(gh);
-          final corners = [
-            LatLng(b.minLat, b.minLng),
-            LatLng(b.minLat, b.maxLng),
-            LatLng(b.maxLat, b.maxLng),
-            LatLng(b.maxLat, b.minLng),
-            LatLng(b.minLat, b.minLng),
-          ];
-          polylines.add(Polyline(
-            points: corners,
-            strokeWidth: 1.5,
-            color: kRiskHigh,
-          ));
+          final centerLat = (b.minLat + b.maxLat) / 2;
+          final centerLng = (b.minLng + b.maxLng) / 2;
 
           // Sequential fade-in: cell i reveals as sweep crosses i/n.
           final threshold = (i + 1) / (cells.length + 1);
-          final visible = (progress.value - threshold).clamp(0.0, 1.0);
-          if (visible > 0) {
-            final centerLat = (b.minLat + b.maxLat) / 2;
-            final centerLng = (b.minLng + b.maxLng) / 2;
-            markers.add(Marker(
-              width: 160,
-              height: 36,
-              point: LatLng(centerLat, centerLng),
-              child: Opacity(
-                opacity: visible.clamp(0.0, 1.0) * 4 > 1
-                    ? 1
-                    : (visible * 4).clamp(0.0, 1.0),
-                child: _FloatingLabel(text: labels[gh] ?? 'avoided cell'),
-              ),
-            ));
-          }
+          final eased = (progress.value - threshold).clamp(0.0, 1.0);
+          if (eased <= 0) continue;
+          final opacity =
+              (eased * 4).clamp(0.0, 1.0); // quick reveal, then hold
+
+          // Big circular danger badge in place of the old red rectangle —
+          // reads as "stay away" at a glance, plays well with the heatmap
+          // glow underneath, and works on any zoom level. No text label —
+          // the explanation card lists the reasons instead.
+          markers.add(Marker(
+            width: 56,
+            height: 56,
+            point: LatLng(centerLat, centerLng),
+            child: Opacity(
+              opacity: opacity,
+              child: const _DangerBadge(),
+            ),
+          ));
         }
-        return Stack(
-          children: [
-            PolylineLayer(polylines: polylines),
-            MarkerLayer(markers: markers),
-          ],
-        );
+        return MarkerLayer(markers: markers);
       },
     );
   }
 }
 
-class _FloatingLabel extends StatelessWidget {
-  const _FloatingLabel({required this.text});
-  final String text;
+class _DangerBadge extends StatelessWidget {
+  const _DangerBadge();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    return DecoratedBox(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: kRiskHigh, width: 1.2),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 4),
-        ],
+        shape: BoxShape.circle,
+        color: kRiskHigh.withValues(alpha: 0.18),
       ),
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+      child: Center(
+        child: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: kRiskHigh,
+            border: Border.all(color: Colors.white, width: 2.5),
+            boxShadow: [
+              BoxShadow(
+                color: kRiskHigh.withValues(alpha: 0.45),
+                blurRadius: 8,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+          alignment: Alignment.center,
+          child: const Icon(
+            Icons.warning_amber_rounded,
+            color: Colors.white,
+            size: 22,
+          ),
+        ),
       ),
     );
+  }
+}
+
+/// Resolves the heatmap snapshot for the demo bbox and hands it to the
+/// [HeatmapLayer] painter — same pattern as the MapScreen binder, scoped to
+/// the route detail screen so the same red blobs show up on both surfaces.
+class _RouteHeatmapBinder extends ConsumerWidget {
+  const _RouteHeatmapBinder();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final data = ref.watch(heatmapDataProvider(kDemoHeatmapBbox));
+    if (data.isEmpty) return const SizedBox.shrink();
+    final cells = <HeatmapCell>[];
+    data.forEach((gh, score) {
+      final b = Geohash.bounds(gh);
+      cells.add(HeatmapCell(
+        geohash7: gh,
+        minLat: b.minLat,
+        maxLat: b.maxLat,
+        minLng: b.minLng,
+        maxLng: b.maxLng,
+        score: score,
+      ));
+    });
+    return HeatmapLayer(cells: cells);
   }
 }
 
