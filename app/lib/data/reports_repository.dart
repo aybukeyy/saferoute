@@ -92,9 +92,11 @@ class ReportsRepository {
         _photoStorage = photoStorage,
         _uuid = uuid ?? const Uuid();
 
-  /// Hard rate-limit caps. ARCHITECTURE.md §9.
-  static const int hourLimit = 5;
-  static const int dayLimit = 20;
+  /// Hard rate-limit caps. Bumped to effectively-disabled values for the
+  /// hackathon demo so the user can pile up reports without waiting an hour.
+  /// ARCHITECTURE.md §9 documents the production targets (5/hour, 20/day).
+  static const int hourLimit = 9999;
+  static const int dayLimit = 99999;
 
   /// Writes a PENDING row to SQLite immediately and mirrors it to Firestore.
   /// The AI classifier reads PENDING rows out-of-band and calls
