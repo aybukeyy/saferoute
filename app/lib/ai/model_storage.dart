@@ -271,16 +271,25 @@ class ModelStorage {
       }
     }
 
-    // Format sanity: only run for files we know should be ZIP-backed model
-    // bundles. Skips the check for arbitrary filenames so unrelated test
-    // fixtures (.txt, etc.) keep working with size-only checks.
-    if (_isZipBackedModel(filename)) {
+    // Format sanity: validate the right magic bytes per extension. `.task`
+    // (MediaPipe) is a ZIP container; `.litertlm` (LiteRT-LM) is its own
+    // binary format starting with the ASCII "LITE" tag. A wrong-format
+    // download (HTML error page, web-variant `.task`, etc.) gets caught here
+    // before flutter_gemma's native init crashes on it.
+    if (_isMediaPipeBundle(filename)) {
       if (!await _hasZipMagic(file)) {
         debugPrint(
             '[ModelStorage] $filename failed ZIP magic check — likely a wrong '
             "format download (e.g. HTML error page or '-web.task' web variant "
             'on mobile). Treating as not-present so the UI can offer a '
             're-download.');
+        return false;
+      }
+    } else if (_isLiteRtLmBundle(filename)) {
+      if (!await _hasLiteRtLmMagic(file)) {
+        debugPrint(
+            '[ModelStorage] $filename failed LiteRT-LM magic check — wrong '
+            'format download. Treating as not-present.');
         return false;
       }
     }
@@ -297,13 +306,40 @@ class ModelStorage {
     return true;
   }
 
-  /// `true` for filenames whose extension is one of the ZIP-backed flutter_gemma
-  /// model formats (`.task`, `.litertlm`). These have a `PK\x03\x04` magic and
-  /// are large (>1 MB); any file whose extension matches but whose first bytes
-  /// don't is corrupt or wrong-format and should be re-downloaded.
-  static bool _isZipBackedModel(String filename) {
-    final lower = filename.toLowerCase();
-    return lower.endsWith('.task') || lower.endsWith('.litertlm');
+  /// `true` for filenames whose extension marks a MediaPipe `.task` bundle —
+  /// those are ZIP containers (`PK\x03\x04` magic at the front).
+  static bool _isMediaPipeBundle(String filename) {
+    return filename.toLowerCase().endsWith('.task');
+  }
+
+  /// `true` for LiteRT-LM `.litertlm` bundles — those are *not* ZIPs; their
+  /// header starts with the ASCII `LITE` tag (`4C 49 54 45`).
+  static bool _isLiteRtLmBundle(String filename) {
+    return filename.toLowerCase().endsWith('.litertlm');
+  }
+
+  /// Reads the first four bytes and returns true iff they spell ASCII `LITE`.
+  /// Files smaller than 1 MB are rejected — every Gemma weight is multi-GB; a
+  /// sub-megabyte `.litertlm` is always a partial download or error body.
+  Future<bool> _hasLiteRtLmMagic(File file) async {
+    try {
+      final size = await file.length();
+      if (size < 1024 * 1024) return false;
+      final raf = await file.open();
+      try {
+        final magic = await raf.read(4);
+        if (magic.length < 4) return false;
+        return magic[0] == 0x4C && // 'L'
+            magic[1] == 0x49 && // 'I'
+            magic[2] == 0x54 && // 'T'
+            magic[3] == 0x45; // 'E'
+      } finally {
+        await raf.close();
+      }
+    } catch (e) {
+      debugPrint('[ModelStorage] _hasLiteRtLmMagic(${file.path}) threw: $e');
+      return false;
+    }
   }
 
   /// Reads the first four bytes of [file] and returns `true` iff they match the
