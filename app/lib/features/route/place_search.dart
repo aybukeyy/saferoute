@@ -1,20 +1,15 @@
-// Lightweight place-search wrapper around the Nominatim (OpenStreetMap)
-// public API. We deliberately avoid the `http` / `geocoding` packages so the
-// hackathon demo doesn't have to touch pubspec — the existing
-// `dart:io HttpClient` pattern from `lib/ai/model_storage.dart` is more than
-// enough for a typeahead that fires once every 300 ms.
+// Lightweight place-search wrapper around the Photon (komoot / OSM) public
+// API. Photon is purpose-built for typeahead — supports prefix matching,
+// returns ranked GeoJSON, and is much more permissive than Nominatim's free
+// instance (which has been returning 403 for our hackathon traffic).
 //
-// Nominatim ToS:
-//   * 1 req/sec/IP — easy to respect with the 300 ms debounce in the UI
-//   * a meaningful, contactable User-Agent header is REQUIRED
-//   * no aggressive bulk usage — we cap `limit` at 5 by default and cache
-//     identical queries in-memory so a user typing the same word twice
-//     doesn't double-charge the public service.
+// We avoid the `http` / `geocoding` packages on purpose so pubspec doesn't
+// need to grow — the `dart:io HttpClient` pattern is more than enough for a
+// typeahead that fires once every 300 ms.
 //
-// Network errors and rate-limit responses (HTTP 429 / 503) silently fall
-// back to an empty list. The caller (`PlaceSearchField`) is responsible for
-// surfacing a hint to the user — the service itself never throws so the UI
-// stays simple.
+// Network errors and non-2xx responses silently fall back to an empty list.
+// The caller (`PlaceSearchField`) is responsible for surfacing a hint to the
+// user — the service itself never throws so the UI stays simple.
 
 import 'dart:async';
 import 'dart:convert';
@@ -23,7 +18,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// One search hit returned by Nominatim, narrowed down to the fields the UI
+/// One search hit returned by Photon, narrowed down to the fields the UI
 /// actually consumes.
 @immutable
 class PlaceSearchResult {
@@ -34,23 +29,57 @@ class PlaceSearchResult {
     this.type,
   });
 
-  /// e.g. `"Beşiktaş İskelesi, Beşiktaş, İstanbul"`. Already localised when
-  /// `accept-language=tr` is sent on the request.
+  /// e.g. `"Marmara Park, Beylikdüzü, İstanbul"`. Built by joining the most
+  /// relevant Photon `properties` fields.
   final String displayName;
 
   final double lat;
   final double lng;
 
-  /// Nominatim's classification — `"amenity"`, `"place"`, `"tourism"`,
-  /// `"highway"`, etc. Used by the UI to pick a leading icon.
+  /// Photon's `osm_value` (or `osm_key`) — `"supermarket"`, `"tourism"`,
+  /// `"residential"`, etc. Drives the leading icon choice.
   final String? type;
 
-  factory PlaceSearchResult.fromJson(Map<String, dynamic> json) {
+  /// Parses one entry from a Photon `features` list. Photon emits a GeoJSON
+  /// FeatureCollection — `geometry.coordinates` is `[lng, lat]`.
+  factory PlaceSearchResult.fromPhotonFeature(Map<String, dynamic> feature) {
+    final geometry = feature['geometry'] as Map<String, dynamic>?;
+    final coords = geometry?['coordinates'] as List?;
+    final lng = (coords != null && coords.length >= 2)
+        ? _parseDouble(coords[0]) ?? 0.0
+        : 0.0;
+    final lat = (coords != null && coords.length >= 2)
+        ? _parseDouble(coords[1]) ?? 0.0
+        : 0.0;
+
+    final props = (feature['properties'] as Map<String, dynamic>?) ?? const {};
+    final name = props['name'] as String?;
+    final street = props['street'] as String?;
+    final houseNumber = props['housenumber'] as String?;
+    final city = props['city'] as String?;
+    final district = (props['district'] ?? props['locality']) as String?;
+    final state = props['state'] as String?;
+    final country = props['country'] as String?;
+
+    final segments = <String>[
+      if (name != null && name.isNotEmpty) name,
+      if (street != null && street.isNotEmpty)
+        houseNumber != null && houseNumber.isNotEmpty
+            ? '$street $houseNumber'
+            : street,
+      if (district != null && district.isNotEmpty) district,
+      if (city != null && city.isNotEmpty) city,
+      if (state != null && state.isNotEmpty && state != city) state,
+      if (country != null && country.isNotEmpty) country,
+    ];
+
+    final display = segments.toSet().toList().join(', ');
+
     return PlaceSearchResult(
-      displayName: (json['display_name'] as String?) ?? '',
-      lat: _parseDouble(json['lat']) ?? 0.0,
-      lng: _parseDouble(json['lon']) ?? 0.0,
-      type: json['type'] as String?,
+      displayName: display,
+      lat: lat,
+      lng: lng,
+      type: (props['osm_value'] ?? props['osm_key']) as String?,
     );
   }
 
@@ -83,12 +112,12 @@ class PlaceSearchService {
   // Constants
   // -------------------------------------------------------------------------
 
-  static const String _baseUrl = 'https://nominatim.openstreetmap.org/search';
+  static const String _baseUrl = 'https://photon.komoot.io/api/';
 
-  /// Nominatim's terms require a real, contactable User-Agent. Hackathon
-  /// contact is intentionally generic — replace before any production use.
+  /// Photon doesn't strictly require a User-Agent but adding one keeps us
+  /// polite and identifies the demo if anyone looks at access logs.
   static const String _userAgent =
-      'SafeRoute/1.0 (Hackathon Demo; saferoute@example.com)';
+      'SafeRoute/1.0 (+https://github.com/aybukeyy/saferoute)';
 
   /// Hard cap on the in-memory cache so a user spamming the search field
   /// can't grow it without bound.
@@ -119,7 +148,7 @@ class PlaceSearchService {
   /// dropdown state.
   Future<List<PlaceSearchResult>> search({
     required String query,
-    int limit = 5,
+    int limit = 10,
     double? viewboxMinLng,
     double? viewboxMinLat,
     double? viewboxMaxLng,
@@ -172,12 +201,14 @@ class PlaceSearchService {
           .join()
           .timeout(_timeout);
       final decoded = jsonDecode(body);
-      if (decoded is! List) return const [];
+      if (decoded is! Map<String, dynamic>) return const [];
+      final features = decoded['features'];
+      if (features is! List) return const [];
 
       final results = <PlaceSearchResult>[];
-      for (final entry in decoded) {
+      for (final entry in features) {
         if (entry is Map<String, dynamic>) {
-          final hit = PlaceSearchResult.fromJson(entry);
+          final hit = PlaceSearchResult.fromPhotonFeature(entry);
           if (hit.displayName.isNotEmpty) {
             results.add(hit);
           }
@@ -213,21 +244,23 @@ class PlaceSearchService {
   }) {
     final params = <String, String>{
       'q': query,
-      'format': 'json',
       'limit': '$limit',
-      'accept-language': 'tr',
-      'addressdetails': '0',
+      // Photon only supports {en, fr, de, it} — Turkish would return HTTP 400.
+      // Place names in Turkey come back in their native form regardless.
     };
 
+    // Photon biases by a single (lat, lon) point rather than a rectangle. We
+    // derive that point from the bbox centroid so the existing call sites
+    // (which pass a Beşiktaş/Istanbul rectangle) stay unchanged.
     final hasFullViewbox = viewboxMinLng != null &&
         viewboxMinLat != null &&
         viewboxMaxLng != null &&
         viewboxMaxLat != null;
     if (hasFullViewbox) {
-      // Nominatim viewbox order: minLng,minLat,maxLng,maxLat (lon-lat pairs).
-      params['viewbox'] =
-          '$viewboxMinLng,$viewboxMinLat,$viewboxMaxLng,$viewboxMaxLat';
-      // We intentionally don't send `bounded=1` — biasing yes, hard fence no.
+      final centroidLng = (viewboxMinLng + viewboxMaxLng) / 2;
+      final centroidLat = (viewboxMinLat + viewboxMaxLat) / 2;
+      params['lat'] = '$centroidLat';
+      params['lon'] = '$centroidLng';
     }
 
     return Uri.parse(_baseUrl).replace(queryParameters: params);
