@@ -56,8 +56,12 @@ class LocationService {
   /// or the device cannot acquire a fix within the platform default timeout.
   Future<LatLng> currentPosition() async {
     final p = await geo.Geolocator.getCurrentPosition(
-      locationSettings: const geo.LocationSettings(
+      locationSettings: geo.AndroidSettings(
         accuracy: geo.LocationAccuracy.high,
+        // Force LocationManager (not FusedLocationProvider) — the emulator's
+        // `adb emu geo fix` injects mock locations into LocationManager's GPS
+        // provider, but Fused (GMS) may not propagate them reliably.
+        forceLocationManager: true,
       ),
     );
     return LatLng(p.latitude, p.longitude);
@@ -73,10 +77,12 @@ class LocationService {
     DateTime? lastEmit;
 
     final sub = geo.Geolocator.getPositionStream(
-      locationSettings: const geo.LocationSettings(
+      locationSettings: geo.AndroidSettings(
         accuracy: geo.LocationAccuracy.high,
         // distanceFilter in metres; 0 means every update.
         distanceFilter: 5,
+        // See currentPosition() for the rationale.
+        forceLocationManager: true,
       ),
     ).listen((p) {
       final now = DateTime.now();
