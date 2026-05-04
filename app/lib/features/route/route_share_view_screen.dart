@@ -14,6 +14,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../app/theme.dart';
+import '../../core/l10n/app_strings.dart';
 import '../../data/route_share_service.dart';
 import '../../models/route_share.dart';
 
@@ -25,22 +26,21 @@ class RouteShareViewScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final svcAsync = ref.watch(routeShareServiceProvider);
+    final strings = ref.watch(stringsProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Live route')),
+      appBar: AppBar(title: Text(strings.shareViewerTitle)),
       body: svcAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
-            child: Text('Sharing unavailable: $e'),
+            child: Text(strings.shareViewerUnavailable('$e')),
           ),
         ),
         data: (svc) {
           if (!svc.isEnabled) {
-            return const _ViewerError(
-              message:
-                  'Sharing is offline on this build. Try again on a device '
-                  'with Firebase configured.',
+            return _ViewerError(
+              message: strings.shareViewerUnavailable(''),
             );
           }
           return StreamBuilder<RouteShare?>(
@@ -52,10 +52,8 @@ class RouteShareViewScreen extends ConsumerWidget {
               }
               final share = snap.data;
               if (share == null) {
-                return const _ViewerError(
-                  message:
-                      'This share link is invalid or has been deleted.\n'
-                      'Bağlantı geçersiz veya silinmiş.',
+                return _ViewerError(
+                  message: strings.shareViewerInvalid,
                 );
               }
               return _ShareMap(share: share);
@@ -182,14 +180,15 @@ class _LiveDot extends StatelessWidget {
   }
 }
 
-class _ShareStatusSheet extends StatelessWidget {
+class _ShareStatusSheet extends ConsumerWidget {
   const _ShareStatusSheet({required this.share});
 
   final RouteShare share;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final strings = ref.watch(stringsProvider);
     return Container(
       margin: const EdgeInsets.all(12),
       padding: const EdgeInsets.all(16),
@@ -212,7 +211,7 @@ class _ShareStatusSheet extends StatelessWidget {
               _StatusBadge(share: share),
               const Spacer(),
               Text(
-                'ETA ${share.etaMinutes} dk',
+                strings.shareEta(share.etaMinutes),
                 style: theme.textTheme.bodyMedium,
               ),
             ],
@@ -226,7 +225,7 @@ class _ShareStatusSheet extends StatelessWidget {
           ],
           const SizedBox(height: 8),
           Text(
-            'Last update: ${_formatRelative(share.updatedAt)}',
+            strings.shareLastUpdate(_formatRelative(share.updatedAt, strings)),
             style: theme.textTheme.bodySmall,
           ),
         ],
@@ -235,14 +234,15 @@ class _ShareStatusSheet extends StatelessWidget {
   }
 }
 
-class _StatusBadge extends StatelessWidget {
+class _StatusBadge extends ConsumerWidget {
   const _StatusBadge({required this.share});
   final RouteShare share;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final (label, bg, fg) = _resolve(theme);
+    final strings = ref.watch(stringsProvider);
+    final (label, bg, fg) = _resolve(theme, strings);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
@@ -259,23 +259,23 @@ class _StatusBadge extends StatelessWidget {
     );
   }
 
-  (String, Color, Color) _resolve(ThemeData theme) {
+  (String, Color, Color) _resolve(ThemeData theme, AppStrings strings) {
     if (share.ended) {
       return (
-        'ARRIVED / VARDI',
+        strings.shareArrived,
         theme.colorScheme.secondaryContainer,
         theme.colorScheme.onSecondaryContainer,
       );
     }
     if (share.isExpired) {
       return (
-        'EXPIRED / SÜRESİ DOLDU',
+        strings.shareExpired,
         theme.colorScheme.surfaceContainerHigh,
         theme.colorScheme.onSurface,
       );
     }
     return (
-      'LIVE / CANLI',
+      strings.shareLive,
       theme.colorScheme.primaryContainer,
       theme.colorScheme.onPrimaryContainer,
     );
@@ -301,11 +301,11 @@ class _ViewerError extends StatelessWidget {
   }
 }
 
-String _formatRelative(DateTime t) {
+String _formatRelative(DateTime t, AppStrings strings) {
   final diff = DateTime.now().toUtc().difference(t);
-  if (diff.inSeconds < 30) return 'just now';
-  if (diff.inMinutes < 1) return '${diff.inSeconds}s ago';
-  if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
-  if (diff.inHours < 24) return '${diff.inHours} h ago';
-  return '${diff.inDays} d ago';
+  if (diff.inSeconds < 30) return strings.relJustNow();
+  if (diff.inMinutes < 1) return strings.relSeconds(diff.inSeconds);
+  if (diff.inMinutes < 60) return strings.relMinutes(diff.inMinutes);
+  if (diff.inHours < 24) return strings.relHours(diff.inHours);
+  return strings.relDays(diff.inDays);
 }

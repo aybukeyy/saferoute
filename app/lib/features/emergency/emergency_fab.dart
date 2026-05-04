@@ -1,9 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/l10n/app_strings.dart';
 import 'emergency_action.dart';
 
-class EmergencyFab extends StatefulWidget {
+class EmergencyFab extends ConsumerStatefulWidget {
   const EmergencyFab({
     super.key,
     required this.actionBuilder,
@@ -14,10 +16,10 @@ class EmergencyFab extends StatefulWidget {
   final Duration holdDuration;
 
   @override
-  State<EmergencyFab> createState() => _EmergencyFabState();
+  ConsumerState<EmergencyFab> createState() => _EmergencyFabState();
 }
 
-class _EmergencyFabState extends State<EmergencyFab>
+class _EmergencyFabState extends ConsumerState<EmergencyFab>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl = AnimationController(
     vsync: this,
@@ -42,14 +44,15 @@ class _EmergencyFabState extends State<EmergencyFab>
   Future<void> _onLongPress() async {
     if (_firing) return;
     setState(() => _firing = true);
+    final strings = ref.read(stringsProvider);
     final messenger = ScaffoldMessenger.of(context);
     try {
       final action = await widget.actionBuilder();
       await action.trigger();
       if (!mounted) return;
       messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Acil durum gönderildi / Emergency sent'),
+        SnackBar(
+          content: Text(strings.emergencySent),
           backgroundColor: Colors.red,
         ),
       );
@@ -57,7 +60,7 @@ class _EmergencyFabState extends State<EmergencyFab>
       debugPrint('[emergency] trigger failed: $e\n$st');
       if (!mounted) return;
       messenger.showSnackBar(
-        SnackBar(content: Text('Hata / Error: $e')),
+        SnackBar(content: Text(strings.emergencyError('$e'))),
       );
     } finally {
       if (mounted) {
@@ -68,10 +71,11 @@ class _EmergencyFabState extends State<EmergencyFab>
   }
 
   void _onShortTap() {
+    final strings = ref.read(stringsProvider);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Basılı tut: 1 saniye / Hold for 1 second'),
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: Text(strings.emergencyHoldHint),
+        duration: const Duration(seconds: 2),
       ),
     );
   }

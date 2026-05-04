@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/l10n/app_strings.dart';
 import 'emergency_contact_storage.dart';
 
-class EmergencySettingsScreen extends StatefulWidget {
+class EmergencySettingsScreen extends ConsumerStatefulWidget {
   const EmergencySettingsScreen({super.key, EmergencyContactStorage? storage})
       : _storage = storage;
 
   final EmergencyContactStorage? _storage;
 
   @override
-  State<EmergencySettingsScreen> createState() =>
+  ConsumerState<EmergencySettingsScreen> createState() =>
       _EmergencySettingsScreenState();
 }
 
-class _EmergencySettingsScreenState extends State<EmergencySettingsScreen> {
+class _EmergencySettingsScreenState extends ConsumerState<EmergencySettingsScreen> {
   static final RegExp _phoneRegex = RegExp(r'^\+\d{10,15}$');
 
   late final EmergencyContactStorage _storage =
@@ -44,20 +46,22 @@ class _EmergencySettingsScreenState extends State<EmergencySettingsScreen> {
   }
 
   Future<void> _save() async {
+    final strings = ref.read(stringsProvider);
     final raw = _controller.text.trim();
     if (!_phoneRegex.hasMatch(raw)) {
-      setState(() => _error = 'Use international format, e.g. +905551234567');
+      setState(() => _error = strings.emergencyContactPhoneError);
       return;
     }
     setState(() => _error = null);
     await _storage.write(raw);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Saved / Kaydedildi')),
+      SnackBar(content: Text(strings.saved)),
     );
   }
 
   Future<void> _clear() async {
+    final strings = ref.read(stringsProvider);
     await _storage.clear();
     if (!mounted) return;
     setState(() {
@@ -65,14 +69,15 @@ class _EmergencySettingsScreenState extends State<EmergencySettingsScreen> {
       _error = null;
     });
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Cleared / Silindi')),
+      SnackBar(content: Text(strings.cleared)),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final strings = ref.watch(stringsProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Acil durum kişisi / Emergency contact')),
+      appBar: AppBar(title: Text(strings.emergencyContactTitle)),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : Padding(
@@ -80,16 +85,13 @@ class _EmergencySettingsScreenState extends State<EmergencySettingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text(
-                    'Acil durum butonuna basıldığında SMS gönderilecek numara.\n'
-                    'Phone that receives an SMS when the emergency button is held.',
-                  ),
+                  Text(strings.emergencyContactHint),
                   const SizedBox(height: 16),
                   TextField(
                     controller: _controller,
                     keyboardType: TextInputType.phone,
                     decoration: InputDecoration(
-                      labelText: 'Phone (E.164, e.g. +905551234567)',
+                      labelText: strings.emergencyContactPhoneLabel,
                       border: const OutlineInputBorder(),
                       errorText: _error,
                     ),
@@ -101,7 +103,7 @@ class _EmergencySettingsScreenState extends State<EmergencySettingsScreen> {
                         child: FilledButton.icon(
                           onPressed: _save,
                           icon: const Icon(Icons.save),
-                          label: const Text('Save / Kaydet'),
+                          label: Text(strings.saveAction),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -109,7 +111,7 @@ class _EmergencySettingsScreenState extends State<EmergencySettingsScreen> {
                         child: OutlinedButton.icon(
                           onPressed: _clear,
                           icon: const Icon(Icons.delete_outline),
-                          label: const Text('Clear / Sil'),
+                          label: Text(strings.clearAction),
                         ),
                       ),
                     ],

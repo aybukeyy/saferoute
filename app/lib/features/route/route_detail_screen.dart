@@ -18,6 +18,7 @@ import 'package:latlong2/latlong.dart';
 
 import '../../app/theme.dart';
 import '../../core/geohash.dart';
+import '../../core/l10n/app_strings.dart';
 import '../../models/route_result.dart';
 import '../explanation/explanation_card.dart';
 import '../map/heatmap_painter.dart';
@@ -55,12 +56,13 @@ class _RouteDetailScreenState extends ConsumerState<RouteDetailScreen> {
       time: widget.request.time,
     )));
 
+    final strings = ref.watch(stringsProvider);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Route'),
+        title: Text(strings.routeTitle),
         actions: [
           IconButton(
-            tooltip: _muted ? 'Unmute voice' : 'Mute voice',
+            tooltip: _muted ? strings.routeUnmute : strings.routeMute,
             icon: Icon(_muted ? Icons.volume_off : Icons.volume_up),
             onPressed: _toggleMute,
           ),
@@ -75,7 +77,7 @@ class _RouteDetailScreenState extends ConsumerState<RouteDetailScreen> {
       ),
       body: routeAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Routing failed: $e')),
+        error: (e, _) => Center(child: Text(strings.routeFailed('$e'))),
         data: (result) => _RouteContent(
           request: widget.request,
           result: result,
@@ -418,14 +420,15 @@ class _RouteHeatmapBinder extends ConsumerWidget {
   }
 }
 
-class _RoutePeekSheet extends StatelessWidget {
+class _RoutePeekSheet extends ConsumerWidget {
   const _RoutePeekSheet({required this.result});
 
   final RouteResult result;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final exp = result.explanationCard;
+    final strings = ref.watch(stringsProvider);
     return Container(
       margin: const EdgeInsets.all(12),
       padding: const EdgeInsets.all(16),
@@ -444,7 +447,8 @@ class _RoutePeekSheet extends StatelessWidget {
             children: [
               const Icon(Icons.shield, color: kRouteSafest),
               const SizedBox(width: 8),
-              Text('Safest route', style: Theme.of(context).textTheme.titleMedium),
+              Text(strings.routeSafestRoute,
+                  style: Theme.of(context).textTheme.titleMedium),
               const Spacer(),
               Text(
                 '+${exp.distanceDeltaMeters.round()} m  ·  +${(exp.timeDeltaSeconds / 60).round()} min',
@@ -465,7 +469,7 @@ class _RoutePeekSheet extends StatelessWidget {
                 );
               },
               icon: const Icon(Icons.help_outline),
-              label: const Text('Why is this safer?'),
+              label: Text(strings.routeWhyIsThisSafer),
             ),
           ),
         ],

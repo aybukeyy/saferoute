@@ -15,6 +15,7 @@ import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../core/geohash.dart';
+import '../../core/l10n/app_strings.dart';
 import '../emergency/emergency_fab.dart';
 import '../emergency/emergency_providers.dart';
 import '../emergency/emergency_settings_screen.dart';
@@ -107,6 +108,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   @override
   Widget build(BuildContext context) {
     final positionAsync = ref.watch(currentLocationProvider);
+    final strings = ref.watch(stringsProvider);
     final initialCenter = positionAsync.maybeWhen(
       data: (p) => p,
       orElse: () => kDefaultMapCenter,
@@ -119,7 +121,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           children: [
             Icon(Icons.shield_outlined, color: Theme.of(context).colorScheme.primary),
             const SizedBox(width: 8),
-            const Text('Safe Route'),
+            Text(strings.appTitle),
           ],
         ),
         actions: [
@@ -128,6 +130,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             onSelected: (v) {
               if (v == 'about') context.push('/about');
               if (v == 'feed') context.push('/feed');
+              if (v == 'settings') context.push('/settings');
               if (v == 'emergency_contact') {
                 Navigator.of(context).push(
                   MaterialPageRoute<void>(
@@ -136,13 +139,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 );
               }
             },
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: 'feed', child: Text('Recent reports')),
+            itemBuilder: (_) => [
+              PopupMenuItem(value: 'feed', child: Text(strings.menuRecentReports)),
               PopupMenuItem(
                 value: 'emergency_contact',
-                child: Text('Acil durum kişisi / Emergency contact'),
+                child: Text(strings.menuEmergencyContact),
               ),
-              PopupMenuItem(value: 'about', child: Text('About')),
+              PopupMenuItem(value: 'settings', child: Text(strings.menuSettings)),
+              PopupMenuItem(value: 'about', child: Text(strings.menuAbout)),
             ],
           ),
         ],
@@ -187,7 +191,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               heroTag: 'fab-locate',
               backgroundColor: Colors.white,
               foregroundColor: Theme.of(context).colorScheme.primary,
-              tooltip: 'Konumuma git / Center on me',
+              tooltip: strings.locateTooltip,
               onPressed: () {
                 final pos = ref.read(currentLocationProvider).maybeWhen(
                       data: (p) => p,
@@ -195,9 +199,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     );
                 if (pos == null) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Konum henüz hazır değil / Location not ready yet'),
-                      duration: Duration(seconds: 2),
+                    SnackBar(
+                      content: Text(strings.locationNotReady),
+                      duration: const Duration(seconds: 2),
                     ),
                   );
                   return;
@@ -216,7 +220,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               heroTag: 'fab-route',
               backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white,
-              tooltip: 'Plan a route',
+              tooltip: strings.planRouteTooltip,
               onPressed: () => context.push('/route'),
               child: const Icon(Icons.alt_route),
             ),
@@ -229,7 +233,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               heroTag: 'fab-report',
               backgroundColor: Colors.red.shade600,
               foregroundColor: Colors.white,
-              label: const Text('Report'),
+              label: Text(strings.reportFabLabel),
               icon: const Icon(Icons.add_alert),
               onPressed: () => showReportSheet(context),
             ),

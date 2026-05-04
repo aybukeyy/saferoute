@@ -15,6 +15,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../app/real_providers.dart';
+import '../../core/l10n/app_strings.dart';
 import '../../data/route_share_service.dart';
 import '../../models/route_result.dart';
 import '../providers.dart';
@@ -91,10 +92,9 @@ class _RouteShareControlState extends ConsumerState<RouteShareControl> {
     if (svc == null || !svc.isEnabled) {
       if (!mounted) return;
       setState(() => _state = const _Idle());
+      final strings = ref.read(stringsProvider);
       messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Sharing offline / Paylaşım çevrimdışı'),
-        ),
+        SnackBar(content: Text(strings.shareOffline)),
       );
       return;
     }
@@ -116,11 +116,9 @@ class _RouteShareControlState extends ConsumerState<RouteShareControl> {
     if (!mounted) return;
     if (share == null) {
       setState(() => _state = const _Idle());
+      final strings = ref.read(stringsProvider);
       messenger.showSnackBar(
-        const SnackBar(
-          content:
-              Text('Could not start share / Paylaşım başlatılamadı'),
-        ),
+        SnackBar(content: Text(strings.shareCouldNotStart)),
       );
       return;
     }
@@ -153,32 +151,29 @@ class _RouteShareControlState extends ConsumerState<RouteShareControl> {
     } catch (e) {
       await Clipboard.setData(ClipboardData(text: body));
       if (!mounted) return;
+      final strings = ref.read(stringsProvider);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Link copied / Bağlantı kopyalandı'),
-        ),
+        SnackBar(content: Text(strings.shareLinkCopied)),
       );
     }
   }
 
   Future<void> _confirmEnd(_Active state) async {
+    final strings = ref.read(stringsProvider);
     final messenger = ScaffoldMessenger.of(context);
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Paylaşımı bitir / End share?'),
-        content: const Text(
-          'Arkadaşların artık konumunu göremeyecek.\n'
-          'Friends can no longer see your live location.',
-        ),
+        title: Text(strings.shareEndDialogTitle),
+        content: Text(strings.shareEndDialogBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Vazgeç / Cancel'),
+            child: Text(strings.shareCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Bitir / End'),
+            child: Text(strings.shareEnd),
           ),
         ],
       ),
@@ -195,9 +190,7 @@ class _RouteShareControlState extends ConsumerState<RouteShareControl> {
     if (!mounted) return;
     setState(() => _state = const _Idle());
     messenger.showSnackBar(
-      const SnackBar(
-        content: Text('Share ended / Paylaşım bitirildi'),
-      ),
+      SnackBar(content: Text(strings.shareEnded)),
     );
   }
 
@@ -212,9 +205,10 @@ class _RouteShareControlState extends ConsumerState<RouteShareControl> {
     final color = state is _Active
         ? Theme.of(context).colorScheme.primary
         : null;
+    final strings = ref.watch(stringsProvider);
     final tooltip = state is _Active
-        ? 'Paylaşımı bitir / End share'
-        : 'Rota paylaş / Share route';
+        ? '${strings.shareEnd} · ${strings.shareDialogTitle}'
+        : strings.shareDialogTitle;
     return IconButton(
       tooltip: tooltip,
       icon: Icon(icon, color: color),
@@ -223,16 +217,16 @@ class _RouteShareControlState extends ConsumerState<RouteShareControl> {
   }
 }
 
-class _ComposeDialog extends StatefulWidget {
+class _ComposeDialog extends ConsumerStatefulWidget {
   const _ComposeDialog({required this.initialMessage});
 
   final String initialMessage;
 
   @override
-  State<_ComposeDialog> createState() => _ComposeDialogState();
+  ConsumerState<_ComposeDialog> createState() => _ComposeDialogState();
 }
 
-class _ComposeDialogState extends State<_ComposeDialog> {
+class _ComposeDialogState extends ConsumerState<_ComposeDialog> {
   late final TextEditingController _controller =
       TextEditingController(text: widget.initialMessage);
 
@@ -244,24 +238,22 @@ class _ComposeDialogState extends State<_ComposeDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = ref.watch(stringsProvider);
     return AlertDialog(
-      title: const Text('Rota paylaş / Share route'),
+      title: Text(strings.shareDialogTitle),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
-            'Arkadaşına gidecek mesaj. Bağlantıya dokunduğunda '
-            'konumunu canlı görecek.',
-          ),
+          Text(strings.shareDialogHint),
           const SizedBox(height: 12),
           TextField(
             controller: _controller,
             autofocus: true,
             maxLength: 120,
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              labelText: 'Mesaj / Message',
+            decoration: InputDecoration(
+              border: const OutlineInputBorder(),
+              labelText: strings.shareMessageLabel,
             ),
           ),
         ],
@@ -269,12 +261,12 @@ class _ComposeDialogState extends State<_ComposeDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(null),
-          child: const Text('Vazgeç / Cancel'),
+          child: Text(strings.shareCancel),
         ),
         FilledButton.icon(
           icon: const Icon(Icons.send),
           onPressed: () => Navigator.of(context).pop(_controller.text),
-          label: const Text('Paylaş / Share'),
+          label: Text(strings.shareAction),
         ),
       ],
     );

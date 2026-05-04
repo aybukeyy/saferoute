@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/l10n/app_strings.dart';
 import '../../models/report.dart';
 import '../providers.dart';
 
@@ -15,20 +16,21 @@ class RecentReportsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final asyncReports = ref.watch(recentReportsProvider);
+    final strings = ref.watch(stringsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Recent reports')),
+      appBar: AppBar(title: Text(strings.recentTitle)),
       body: RefreshIndicator(
         onRefresh: () async => ref.invalidate(recentReportsProvider),
         child: asyncReports.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Failed to load: $e')),
+          error: (e, _) => Center(child: Text(strings.recentFailed('$e'))),
           data: (reports) {
             if (reports.isEmpty) {
               return ListView(
-                children: const [
-                  SizedBox(height: 80),
-                  Center(child: Text('No reports yet.')),
+                children: [
+                  const SizedBox(height: 80),
+                  Center(child: Text(strings.recentEmpty)),
                 ],
               );
             }

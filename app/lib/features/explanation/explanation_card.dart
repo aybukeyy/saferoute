@@ -17,6 +17,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/l10n/app_strings.dart';
 import '../../models/report.dart';
 import '../../models/route_result.dart';
 import '../providers.dart';
@@ -29,6 +30,7 @@ class ExplanationCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final exp = result.explanationCard;
+    final strings = ref.watch(stringsProvider);
 
     return SafeArea(
       top: false,
@@ -38,7 +40,7 @@ class ExplanationCard extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Why is this safer?',
+            Text(strings.routeWhyIsThisSafer,
                 style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
             // Layer 1 — Gemma 4 E4B route-level summary
@@ -76,7 +78,7 @@ class ExplanationCard extends ConsumerWidget {
             const Divider(height: 32),
 
             // Layer 2 — per-cell tap-able sheets
-            Text('Avoided cells',
+            Text(strings.explainAvoidedCells,
                 style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             for (final cell in result.avoidedCells)
@@ -85,7 +87,7 @@ class ExplanationCard extends ConsumerWidget {
             const Divider(height: 32),
 
             // Layer 3 — verbatim formula
-            Text('Risk formula',
+            Text(strings.explainRiskFormula,
                 style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 6),
             Container(

@@ -14,6 +14,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../core/l10n/app_strings.dart';
 import '../../data/photo_storage.dart';
 import '../providers.dart';
 import 'voice_input.dart';
@@ -119,8 +120,8 @@ class _ReportSheetState extends ConsumerState<ReportSheet> {
       _voiceAvailable = false;
     });
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Voice input unavailable. Type your report.'),
+      SnackBar(
+        content: Text(ref.read(stringsProvider).reportSheetVoiceUnavailable),
       ),
     );
   }
@@ -233,9 +234,9 @@ class _ReportSheetState extends ConsumerState<ReportSheet> {
       if (!mounted) return;
       Navigator.of(context).pop();
       messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Report received — classifying on-device…'),
-          duration: Duration(seconds: 3),
+        SnackBar(
+          content: Text(ref.read(stringsProvider).reportSheetSubmitted),
+          duration: const Duration(seconds: 3),
         ),
       );
     } catch (e) {
@@ -263,7 +264,7 @@ class _ReportSheetState extends ConsumerState<ReportSheet> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not attach photo.')),
+        SnackBar(content: Text(ref.read(stringsProvider).reportSheetCouldNotAttach)),
       );
     }
   }
@@ -390,7 +391,7 @@ class _ReportSheetState extends ConsumerState<ReportSheet> {
                       ? null
                       : () => _pickPhoto(ImageSource.camera),
                   icon: const Icon(Icons.photo_camera_outlined),
-                  label: const Text('Camera'),
+                  label: Text(ref.read(stringsProvider).reportSheetCamera),
                 ),
               ),
               const SizedBox(width: 8),
@@ -401,7 +402,7 @@ class _ReportSheetState extends ConsumerState<ReportSheet> {
                       ? null
                       : () => _pickPhoto(ImageSource.gallery),
                   icon: const Icon(Icons.photo_library_outlined),
-                  label: const Text('Gallery'),
+                  label: Text(ref.read(stringsProvider).reportSheetGallery),
                 ),
               ),
             ],

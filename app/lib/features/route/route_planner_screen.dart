@@ -16,6 +16,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../core/l10n/app_strings.dart';
 import '../map/map_screen.dart' show kDefaultMapCenter, kDefaultZoom;
 import '../providers.dart';
 import 'place_search.dart';
@@ -82,10 +83,11 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
           data: (p) => p,
           orElse: () => kDefaultMapCenter,
         );
+    final strings = ref.watch(stringsProvider);
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Plan route')),
+      appBar: AppBar(title: Text(strings.routePlannerTitle)),
       body: Column(
         children: [
           Container(
@@ -97,7 +99,7 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
               children: [
                 PlaceSearchField(
                   controller: _searchController,
-                  hintText: 'Hedef ara (örn: Marmara Park, Beylikdüzü, Kadıköy İskele)',
+                  hintText: strings.routePlannerHint,
                   bias: _kIstanbulBias,
                   onSelected: _onPlaceSelected,
                 ),
@@ -113,8 +115,8 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
                     Expanded(
                       child: Text(
                         _destination == null
-                            ? 'Veya haritaya dokunun'
-                            : 'Destination set — ready to find routes.',
+                            ? strings.routePlannerTapHint
+                            : strings.routePlannerDestinationSet,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -164,7 +166,7 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         icon: const Icon(Icons.directions),
-        label: const Text('Find route'),
+        label: Text(strings.routePlannerFindRoute),
         onPressed: _destination == null
             ? null
             : () => context.push(
