@@ -6,6 +6,8 @@
 // agent overrides those providers with the real data/sync/routing services
 // in main.dart.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,11 +22,28 @@ import '../providers.dart';
 import '../report/report_sheet.dart';
 import 'heatmap_painter.dart';
 
+/// How often the heatmap polls SQLite for fresh risk-cell data. Newly
+/// submitted reports (especially emergencies) update `risk_cells` directly
+/// but don't push back to the provider, so the cached snapshot stays stale
+/// otherwise. 2 s is fast enough that the user sees their submission
+/// darken within a beat.
+const Duration _kHeatmapRefreshInterval = Duration(seconds: 2);
+
 /// Default map center used until GPS resolves. Beşiktaş, Istanbul — matches
 /// the bundled demo seed (`assets/seed_reports.json`) and the recommended
 /// `tools/extract_osm.py --bbox` for IMPLEMENTATION.md §7.
 const LatLng kDefaultMapCenter = LatLng(41.060, 29.015);
 const double kDefaultZoom = 14;
+
+/// Fixed bbox the heatmap renders for. Independent of camera pan/zoom so the
+/// red blobs stay anchored to real-world locations and don't visually shift
+/// when the user moves the camera. Matches the bbox the seed JSON ships with.
+const BoundingBox kDemoHeatmapBbox = BoundingBox(
+  south: 41.040,
+  west: 28.985,
+  north: 41.080,
+  east: 29.045,
+);
 
 class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key});
@@ -40,8 +59,23 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   // key for the heatmap provider.
   BoundingBox? _bbox;
 
+  Timer? _heatmapPoll;
+
+  @override
+  void initState() {
+    super.initState();
+    // Periodically nudge the heatmap so freshly-submitted reports (which
+    // update risk_cells in SQLite but don't notify the provider) become
+    // visible without a manual map gesture.
+    _heatmapPoll = Timer.periodic(_kHeatmapRefreshInterval, (_) {
+      if (!mounted) return;
+      ref.read(heatmapRefreshTickProvider.notifier).bump();
+    });
+  }
+
   @override
   void dispose() {
+    _heatmapPoll?.cancel();
     _mapController.dispose();
     super.dispose();
   }
@@ -131,7 +165,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 userAgentPackageName: 'com.evam.saferoute',
                 maxZoom: 19,
               ),
-              if (_bbox != null) _HeatmapBinder(bbox: _bbox!),
+              const _HeatmapBinder(bbox: kDemoHeatmapBbox),
               if (positionAsync.hasValue)
                 MarkerLayer(
                   markers: [
