@@ -28,7 +28,7 @@ HOT_ZONES = [
         "name": "Akaretler",
         "center": (41.0451, 28.9912),
         "radius_deg": 0.0030,
-        "weight": 35,
+        "weight": 14,
         "categories": [("harassment", 50), ("violence", 30), ("suspicious_activity", 20)],
         "night_bias": 0.85,
     },
@@ -36,7 +36,7 @@ HOT_ZONES = [
         "name": "Beşiktaş İskele",
         "center": (41.0418, 29.0048),
         "radius_deg": 0.0025,
-        "weight": 30,
+        "weight": 12,
         "categories": [("theft", 60), ("harassment", 20), ("suspicious_activity", 20)],
         "night_bias": 0.30,
     },
@@ -44,13 +44,66 @@ HOT_ZONES = [
         "name": "Yıldız Park edge",
         "center": (41.0463, 29.0125),
         "radius_deg": 0.0035,
-        "weight": 25,
+        "weight": 10,
         "categories": [("suspicious_activity", 40), ("vandalism", 35), ("violence", 15), ("theft", 10)],
         "night_bias": 0.75,
     },
+    {
+        "name": "Ortaköy",
+        "center": (41.0460, 29.0270),
+        "radius_deg": 0.0030,
+        "weight": 8,
+        "categories": [("theft", 40), ("harassment", 30), ("violence", 20), ("vandalism", 10)],
+        "night_bias": 0.55,
+    },
+    {
+        "name": "Çırağan",
+        "center": (41.0432, 29.0185),
+        "radius_deg": 0.0025,
+        "weight": 7,
+        "categories": [("theft", 45), ("suspicious_activity", 30), ("harassment", 25)],
+        "night_bias": 0.45,
+    },
+    {
+        "name": "Maçka Park",
+        "center": (41.0480, 28.9985),
+        "radius_deg": 0.0035,
+        "weight": 8,
+        "categories": [("suspicious_activity", 40), ("violence", 25), ("harassment", 20), ("vandalism", 15)],
+        "night_bias": 0.80,
+    },
+    {
+        "name": "Kadirgalar",
+        "center": (41.0552, 29.0145),
+        "radius_deg": 0.0040,
+        "weight": 6,
+        "categories": [("theft", 35), ("vandalism", 30), ("suspicious_activity", 35)],
+        "night_bias": 0.60,
+    },
+    {
+        "name": "Levent yolu",
+        "center": (41.0650, 29.0050),
+        "radius_deg": 0.0045,
+        "weight": 5,
+        "categories": [("theft", 40), ("vandalism", 25), ("suspicious_activity", 35)],
+        "night_bias": 0.55,
+    },
+    {
+        # Spread cluster around (41.070, 29.025) — broad scatter (~3 km
+        # diameter) so the area glows as a region, not a single dot.
+        "name": "Kuzey-doğu çevresi",
+        "center": (41.0700, 29.0250),
+        "radius_deg": 0.0120,
+        "weight": 9,
+        "categories": [
+            ("theft", 30), ("harassment", 25), ("violence", 15),
+            ("suspicious_activity", 20), ("vandalism", 10),
+        ],
+        "night_bias": 0.60,
+    },
 ]
 
-SCATTER_WEIGHT = 100 - sum(z["weight"] for z in HOT_ZONES)  # 10
+SCATTER_WEIGHT = 100 - sum(z["weight"] for z in HOT_ZONES)  # 30
 RISK_DISTRIBUTION = [("low", 25), ("medium", 50), ("high", 25)]
 
 TR_TEMPLATES = {
