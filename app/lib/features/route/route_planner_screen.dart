@@ -21,14 +21,16 @@ import '../providers.dart';
 import 'place_search.dart';
 import 'place_search_field.dart';
 
-/// Beşiktaş bias rectangle. Nominatim ranks results inside this box higher
-/// without strictly excluding hits outside it — matches the demo's hot zone
-/// without making the search useless if the user types "Kadıköy".
-const PlaceSearchBias _kBesiktasBias = (
-  minLng: 28.985,
-  minLat: 41.040,
-  maxLng: 29.045,
-  maxLat: 41.080,
+/// İstanbul-genişliği bias rectangle — geniş tutuyoruz ki "Beylikdüzü",
+/// "Maltepe", "Marmara Park" gibi şehir-içi sorgular tek aramada çıksın.
+/// Nominatim viewbox biasing yapar ama dışarıyı dışlamaz, dolayısıyla yine
+/// "Ankara" yazsalar Ankara çıkar — sadece İstanbul içi sonuçlar daha
+/// üst sıralarda görünür.
+const PlaceSearchBias _kIstanbulBias = (
+  minLng: 28.50,
+  minLat: 40.80,
+  maxLng: 29.45,
+  maxLat: 41.30,
 );
 
 /// Zoom level the map snaps to when the user picks a search result. Tight
@@ -95,8 +97,8 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
               children: [
                 PlaceSearchField(
                   controller: _searchController,
-                  hintText: 'Hedef yer ara (örn: Beşiktaş İskele)',
-                  bias: _kBesiktasBias,
+                  hintText: 'Hedef ara (örn: Marmara Park, Beylikdüzü, Kadıköy İskele)',
+                  bias: _kIstanbulBias,
                   onSelected: _onPlaceSelected,
                 ),
                 const SizedBox(height: 8),
