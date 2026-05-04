@@ -8,6 +8,7 @@ import '../features/onboarding/model_download_screen.dart';
 import '../features/route/route_detail_screen.dart';
 import '../features/route/route_planner_screen.dart';
 import '../features/route/route_share_view_screen.dart';
+import '../features/settings/settings_screen.dart';
 
 /// App-wide router. Home is the live MapScreen; secondary screens are
 /// pushed via go_router named routes. The integration agent may extend
@@ -64,6 +65,11 @@ GoRouter buildAppRouter({String initialLocation = '/'}) {
           final id = state.pathParameters['id'] ?? '';
           return RouteShareViewScreen(shareId: id);
         },
+      ),
+      GoRoute(
+        path: '/settings',
+        name: 'settings',
+        builder: (context, state) => const SettingsScreen(),
       ),
     ],
   );

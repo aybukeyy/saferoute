@@ -21,18 +21,21 @@ import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter_gemma/flutter_gemma.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'ai/model_storage.dart';
 import 'app/real_providers.dart';
 import 'app/router.dart';
 import 'app/theme.dart';
+import 'core/l10n/app_strings.dart';
 import 'data/classification_worker.dart';
 import 'data/local_db.dart';
 import 'data/proximity_alert_service.dart';
 import 'data/seed_loader.dart';
 import 'data/sync_service.dart' as data;
 import 'features/providers.dart' as ui;
+import 'features/settings/locale_notifier.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -236,18 +239,26 @@ Future<void> main() async {
   );
 }
 
-class SafeRouteApp extends StatelessWidget {
+class SafeRouteApp extends ConsumerWidget {
   const SafeRouteApp({super.key, this.initialRoute = '/'});
 
   final String initialRoute;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final locale = ref.watch(localeNotifierProvider);
     return MaterialApp.router(
       title: 'Safe Route',
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
       routerConfig: buildAppRouter(initialLocation: initialRoute),
+      locale: locale,
+      supportedLocales: AppStrings.supportedLocales,
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
     );
   }
 }
