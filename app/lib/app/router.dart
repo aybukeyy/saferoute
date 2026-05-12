@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/about/about_screen.dart';
+import '../features/demo/demo_test_screen.dart';
 import '../features/feed/recent_reports_screen.dart';
 import '../features/map/map_screen.dart';
 import '../features/onboarding/model_download_screen.dart';
@@ -44,6 +45,11 @@ GoRouter buildAppRouter({String initialLocation = '/'}) {
         path: '/onboarding/models',
         name: 'onboarding_models',
         builder: (context, state) => const ModelDownloadScreen(),
+      ),
+      GoRoute(
+        path: '/demo',
+        name: 'demo',
+        builder: (context, state) => const DemoTestScreen(),
       ),
       GoRoute(
         path: '/route/detail',

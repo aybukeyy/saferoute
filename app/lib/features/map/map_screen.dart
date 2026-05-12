@@ -125,6 +125,22 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           ],
         ),
         actions: [
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+            child: FilledButton.icon(
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.deepPurple,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+              ),
+              icon: const Icon(Icons.science_outlined, size: 18),
+              label: const Text(
+                'Test',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              onPressed: () => context.push('/demo'),
+            ),
+          ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
             onSelected: (v) {

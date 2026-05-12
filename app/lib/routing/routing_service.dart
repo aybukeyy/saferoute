@@ -125,7 +125,7 @@ class RoutingService {
     final candidates = yen.kShortest(
       sourceNode: src,
       targetNode: dst,
-      k: 5,
+      k: 15,
     );
 
     if (candidates.isEmpty) {
@@ -172,11 +172,15 @@ class RoutingService {
       }
     }
 
-    // Step 3 — re-rank.
+    // Step 3 — re-rank. Demo için alpha'yı default 100'den 250'ye çıkardık —
+    // chokepoint cell skorları (3+ rapor × surge × time) çoğu zaman 5+ değer
+    // alır, alpha=100 ile sadece 500m detour mantıklı görünür; 250 ile ~1.2km
+    // detour bile justify olur ve safe rota görünür şekilde dolanır.
     final rerank = RiskRerank.pickSafest(
       candidatePaths: candidates,
       graph: graph,
       predictedRisk: (gh) => riskCache[gh] ?? 0.0,
+      alpha: 250.0,
     );
 
     // Step 4 — Layer-1 Gemma E4B summaries for top-N avoided cells. Capped
