@@ -1,5 +1,5 @@
 <div align="center">
-# 🛡️ Safe Route
+🛡️ Safe Route
  
 ### Topluluk destekli, on-device Gemma 4 ile güvenli yaya navigasyonu
  
