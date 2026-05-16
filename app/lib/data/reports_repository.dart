@@ -345,6 +345,7 @@ class ReportsRepository {
     final db = await _db.db;
     final rows = await db.query(
       'reports',
+      where: "text NOT LIKE '%(cluster echo)'",
       orderBy: 'created_at DESC',
       limit: limit,
     );
