@@ -387,11 +387,13 @@ class GemmaService {
     await _ensureInstalled(mode);
 
     final cold = Stopwatch()..start();
+    // Android emülatöründe OpenCL yok → GPU backend fails. Debug build'de CPU'ya düş.
+    final backend = kDebugMode ? PreferredBackend.cpu : PreferredBackend.gpu;
     final model = await FlutterGemma.getActiveModel(
       // Generous context: classify prompts are ~300 tokens, summary prompts
       // grow with report count. 2048 is a safe upper bound for both modes.
       maxTokens: 2048,
-      preferredBackend: PreferredBackend.gpu,
+      preferredBackend: backend,
     );
     debugPrint(
         '[GemmaService] cold-start mode=$mode in ${cold.elapsedMilliseconds} ms');

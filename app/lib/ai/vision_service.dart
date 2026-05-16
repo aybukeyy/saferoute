@@ -12,7 +12,9 @@ class _DefaultVisionLoader implements VisionInferenceLoader {
   @override
   Future<InferenceModel> loadVisionModel() => FlutterGemma.getActiveModel(
         maxTokens: 1024,
-        preferredBackend: PreferredBackend.gpu,
+        // Android emülatöründe OpenCL yok → GPU backend fails. Debug build'de CPU'ya düş.
+        preferredBackend:
+            kDebugMode ? PreferredBackend.cpu : PreferredBackend.gpu,
         supportImage: true,
       );
 }
@@ -30,6 +32,12 @@ class VisionService {
 
   Future<String?> analyzeImage(String? localPath) async {
     if (localPath == null) return null;
+    // Emülatör/CPU backend'de flutter_gemma vision pipeline'ı SIGSEGV ediyor.
+    // Debug build'de no-op döner; release'de (gerçek cihaz, GPU) tam çalışır.
+    if (kDebugMode) {
+      debugPrint('[VisionService] skipped in debug build (CPU backend incompatible)');
+      return null;
+    }
     try {
       final file = File(localPath);
       if (!await file.exists()) {
