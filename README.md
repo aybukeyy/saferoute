@@ -470,56 +470,6 @@ python extract_osm.py --bbox <min_lon>,<min_lat>,<max_lon>,<max_lat>
  
 ---
  
-## 📂 Proje Yapısı
- 
-```
-saferoute/
-├── app/                          # Flutter projesi (Android Studio bunu açar)
-│   ├── lib/                      # Dart kaynak kodu
-│   │   ├── core/
-│   │   │   ├── geohash.dart          # encode / decode / bounds
-│   │   │   ├── astar.dart            # A* + Haversine heuristic
-│   │   │   ├── yen_k_shortest.dart   # K=5 alternatif yol
-│   │   │   ├── risk_rerank.dart      # cost = dist + α × Σ risk
-│   │   │   ├── priority_queue.dart   # özel MinHeap
-│   │   │   ├── osm_graph.dart        # binary asset loader
-│   │   │   └── routing_service.dart  # üst seviye orkestrasyon
-│   │   ├── gemma/
-│   │   │   ├── gemma_service.dart    # hot-swap, E2B/E4B yönetimi
-│   │   │   ├── prompts.dart          # kilitli sistem prompt'ları
-│   │   │   └── parser.dart           # JSON parse + retry
-│   │   ├── risk/
-│   │   │   └── risk_engine.dart      # formül + tüm sabitler public
-│   │   └── features/
-│   │       ├── map/                  # harita ekranı, heatmap painter
-│   │       ├── route/                # rota planlayıcı, RouteDetail
-│   │       ├── report/               # bildirim bottom sheet
-│   │       ├── feed/                 # son bildirimler akışı
-│   │       └── settings/             # dil, acil kişi
-│   ├── assets/
-│   │   ├── road_graph.bin        # OSM yaya grafiği — gitignore'da, extract_osm.py ile üret
-│   │   └── seed_reports.json     # demo için 50 sentetik bildirim
-│   ├── eval/                     # LLM çıktı eval scriptleri
-│   │   ├── eval_dataset.json     # 100 bildirimlik sınıflandırma seti
-│   │   └── eval_harness.dart     # gerçek on-device çıkarım koşumu
-│   ├── android/                  # Android native (Kotlin, Gradle)
-│   ├── ios/                      # iOS native (Swift, Pods)
-│   ├── web/                      # Web desteği
-│   ├── test/                     # Unit testler
-│   ├── integration_test/         # Integration testler
-│   └── pubspec.yaml              # Flutter bağımlılıkları
-├── tools/
-│   └── extract_osm.py            # OSM → binary graf pipeline'ı
-├── docs/
-│   ├── screenshots/              # ekran görüntüleri
-│   └── planning/                 # mimari, görevler, karar günlüğü
-├── firebase.json                 # Firebase Hosting config
-├── firestore.rules               # Firestore security rules
-├── SYSTEM.md                     # tam sistem tasarımı
-└── README.md
-```
- 
----
  
 ## 📊 Değerlendirme
  
@@ -550,21 +500,6 @@ Sınıflandırma doğruluğu 100 bildirimlik eval seti üzerinde, **gerçek dona
  
 ---
  
-## 🏅 Hackathon
- 
-**Yarışma:** Kaggle × Google DeepMind Gemma 4 Good Hackathon — Güvenlik Kategorisi  
-**Ödül havuzu:** 200.000 USD  
-**Son başvuru:** 18 Mayıs 2026
- 
-Safe Route bu yarışma için şu kriterleri doğrudan karşılar:
- 
-- ✅ **Etki:** Gerçek dünyada test edilebilir güvenlik problemi, ölçülebilir veri
-- ✅ **Teknik derinlik:** On-device Gemma 4 E2B + E4B, hot-swap, saf Dart routing
-- ✅ **Gizlilik:** Tüm AI inference on-device; Firestore yalnızca senkronizasyon
-- ✅ **Açıklanabilirlik:** Her risk skoru görünür formül; 3 katmanlı açıklama
-- ✅ **Tekrarlanabilirlik:** Eval koşum takımı + dataset repoda açık
-- ✅ **Çevrimdışı çalışma:** SQLite-first, ağ olmasa da harita + heatmap çalışır
----
  
 <div align="center">
 Daha güvenli sokaklar için ❤️ ile yapıldı
