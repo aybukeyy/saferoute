@@ -3,13 +3,6 @@
  
 ### Topluluk destekli, on-device Gemma 4 ile güvenli yaya navigasyonu
  
-[![Flutter](https://img.shields.io/badge/Flutter-3.11.5+-blue?logo=flutter)](https://flutter.dev)
-[![Gemma 4](https://img.shields.io/badge/Gemma_4-E2B_%2B_E4B-green?logo=google)](https://ai.google.dev/gemma)
-[![Lisans](https://img.shields.io/badge/Lisans-Apache_2.0-orange)](LICENSE)
-[![Kaggle](https://img.shields.io/badge/Kaggle-Gemma_4_Good_Hackathon-20BEFF?logo=kaggle)](https://www.kaggle.com/competitions/gemma-4-good-hackathon)
-[![Platform](https://img.shields.io/badge/Platform-Android-brightgreen?logo=android)](https://developer.android.com)
-[![Durum](https://img.shields.io/badge/Durum-Hackathon_Submission-red)]()
- 
 </div>
 ---
  
