@@ -1,5 +1,4 @@
 <div align="center">
-<img src="docs/assets/banner.png" alt="Safe Route Banner" width="100%"/>
 # 🛡️ Safe Route
  
 ### Topluluk destekli, on-device Gemma 4 ile güvenli yaya navigasyonu
