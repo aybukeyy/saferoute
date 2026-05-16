@@ -19,7 +19,7 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32"/>
     <application
-        android:label="app"
+        android:label="Safe Route"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <!-- Optional GPU backend for flutter_gemma (LiteRT/MediaPipe). The
