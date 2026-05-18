@@ -120,7 +120,7 @@ That is Safe Route's community chain. Every report reaches all users on that str
 
 ## 🎬 Demo
 
-[▶ Watch the 3-minute demo video](https://youtube.com/...)
+[▶ Watch the 3-minute demo video](https://youtu.be/EY5UBMpPF_g)
 
 | Risk Map | Safe vs Short Route | Safety Report |
 |:---:|:---:|:---:|
