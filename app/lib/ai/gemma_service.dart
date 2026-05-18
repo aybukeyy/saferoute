@@ -149,15 +149,67 @@ class GemmaService {
     );
 
     return _withInferenceLock<Classification>(() async {
-      await _ensureInstalled(GemmaMode.e2b);
-      await _ensureActive(GemmaMode.e2b);
-      final model = _activeModel!;
+      // Self-heal: cancelGeneration sonrası native handle "closed" state'e
+      // düşüyor; bir önceki call'dan miras kalmış kapanmış model varsa
+      // _activeModel'i null'la ki _ensureActive temiz yeniden yüklesin.
+      InferenceModel? model;
+      for (var attempt = 0; attempt < 2; attempt++) {
+        try {
+          await _ensureInstalled(GemmaMode.e2b);
+          await _ensureActive(GemmaMode.e2b);
+          model = _activeModel!;
+          break;
+        } on StateError catch (e) {
+          if (attempt == 0 && e.message.contains('Model is closed')) {
+            debugPrint(
+                '[GemmaService] active handle closed, resetting and retrying');
+            _activeModel = null;
+            _activeMode = null;
+            continue;
+          }
+          rethrow;
+        }
+      }
+      if (model == null) {
+        throw StateError('Failed to acquire a live inference model after retry');
+      }
       final stopwatch = Stopwatch()..start();
 
-      final raw1 = await _runOnce(
-        model: model,
-        systemPrompt: GemmaPrompts.classifySystem,
-        userPrompt: userPrompt,
+      // Self-heal _runOnce too: handle "closed" thrown from createSession by
+      // resetting and reloading the model once.
+      Future<String> runWithSelfHeal({
+        required double temperature,
+        required double topP,
+        required int topK,
+      }) async {
+        for (var attempt = 0; attempt < 2; attempt++) {
+          try {
+            return await _runOnce(
+              model: model!,
+              systemPrompt: GemmaPrompts.classifySystem,
+              userPrompt: userPrompt,
+              temperature: temperature,
+              topP: topP,
+              topK: topK,
+            );
+          } on StateError catch (e) {
+            if (attempt == 0 && e.message.contains('Model is closed')) {
+              debugPrint(
+                  '[GemmaService] model closed mid-run, reloading and retrying');
+              _activeModel = null;
+              _activeMode = null;
+              await _ensureInstalled(GemmaMode.e2b);
+              await _ensureActive(GemmaMode.e2b);
+              model = _activeModel!;
+              continue;
+            }
+            rethrow;
+          }
+        }
+        throw StateError('runWithSelfHeal exhausted retries');
+      }
+
+      final raw1 = await runWithSelfHeal(
         // Tighten sampling for JSON-mode-style determinism. flutter_gemma 0.13
         // does not expose a hard "JSON mode" toggle, so we lean on low
         // temperature + topP to discourage prose drift.
@@ -174,10 +226,7 @@ class GemmaService {
       debugPrint(
           '[GemmaService] classify parse failed (${(outcome1 as ParseFailure).reason}) — retrying once');
 
-      final raw2 = await _runOnce(
-        model: model,
-        systemPrompt: GemmaPrompts.classifySystem,
-        userPrompt: userPrompt,
+      final raw2 = await runWithSelfHeal(
         temperature: 0.0, // deterministic on retry
         topP: 0.9,
         topK: 32,
