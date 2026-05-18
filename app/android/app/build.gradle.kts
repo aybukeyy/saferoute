@@ -39,6 +39,12 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            // Disable R8/ProGuard — MediaPipe proto classes are referenced via
+            // reflection by flutter_gemma; shrinking removes them and the build
+            // dies with "Missing class com.google.mediapipe.proto...". Keeping
+            // R8 off until proper keep rules are generated.
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }
