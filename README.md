@@ -1,163 +1,168 @@
 <div align="center">
-🛡️ Safe Route
- 
-### Topluluk destekli, on-device Gemma 4 ile güvenli yaya navigasyonu
- 
+
+# 🛡️ Safe Route
+
+### Community-powered pedestrian safety navigation with on-device Gemma 4
+
 </div>
+
 ---
- 
-> **"Google Maps gibi — ama hangi sokaktan *kaçınman* gerektiğini söyler."**
- 
-Safe Route, tamamen **telefon üzerinde** çalışan bir yaya güvenliği navigasyon uygulamasıdır. Topluluk üyeleri tek cümlelik güvenlik bildirimleri gönderir; Gemma 4 bunları gerçek zamanlı olarak on-device sınıflandırır; uygulama canlı bir risk haritası oluşturur ve A→B arasında **iki rota** sunar: en kısa (gri) ve en güvenli (yeşil). Kara kutu yok, bulut AI yok, gizlilik ihlali yok.
- 
-**Kaggle × Google DeepMind Gemma 4 Good Hackathon** — Güvenlik kategorisi için geliştirildi.
- 
+
+> **"Like Google Maps — but it tells you which streets to *avoid*."**
+
+Safe Route is a pedestrian safety navigation app that runs entirely **on your phone**. Community members submit one-sentence safety reports; Gemma 4 classifies them in real time, on-device; the app builds a live risk map and offers **two routes** between any A→B: the shortest (gray) and the safest (green). No black box. No cloud AI. No privacy compromise.
+
+Built for the **Kaggle × Google DeepMind Gemma 4 Good Hackathon** — Safety category.
+
 ---
- 
-## 📋 İçindekiler
- 
-- [Problem](#-problem--güven-boşluğu)
-- [Kimler İçin](#-kimler-için)
+
+## 📋 Table of Contents
+
+- [The Problem](#-the-problem--the-trust-gap)
+- [Who It's For](#-who-its-for)
 - [Demo](#-demo)
-- [Nasıl Çalışır](#-nasıl-çalışır)
-- [Gemma 4 Kullanımı](#-gemma-4-nasıl-kullanılıyor)
-- [Risk Modeli](#-saydam-risk-modeli)
-- [Rota Planlama](#-rota-planlama)
-- [Mimari](#-mimari)
-- [Teknoloji Yığını](#-teknoloji-yığını)
-- [Kurulum](#-kurulum)
-- [Proje Yapısı](#-proje-yapısı)
-- [Değerlendirme](#-değerlendirme)
-- [Sınırlamalar](#-bilinen-sınırlamalar)
+- [How It Works](#️-how-it-works)
+- [How Gemma 4 Is Used](#-how-gemma-4-is-used)
+- [Risk Model](#-transparent-risk-model)
+- [Route Planning](#️-route-planning)
+- [Architecture](#️-architecture)
+- [Tech Stack](#️-tech-stack)
+- [Setup](#-setup)
+- [Project Structure](#-project-structure)
+- [Evaluation](#-evaluation)
+- [Known Limitations](#️-known-limitations)
 - [Hackathon](#-hackathon)
+
 ---
- 
-## 🚨 Problem — Güven Boşluğu
- 
-Kentlerde yaşayan yayalar rota kararlarını **güvenlik sezgisine** göre verir — geçmiş deneyimlerden ve kulaktan kulağa yayılan bilgilerden şekillenen bir sezgi. Bu kolektif bilgi var, ama onu yüzey çıkaracak bir altyapı hiç olmadı.
- 
-Mevcut navigasyon uygulamaları süre ve mesafeyi optimize eder. Hiçbiri *algılanan güvenliği* hesaba katmaz.
- 
-### Sayılarla Sorunun Büyüklüğü
- 
-| Veri | Kaynak |
+
+## 🚨 The Problem — The Trust Gap
+
+Pedestrians in cities make routing decisions based on **safety intuition** — a sense shaped by past experiences and word-of-mouth. That collective knowledge exists, but there has never been any infrastructure to surface it.
+
+Existing navigation apps optimize for time and distance. None of them account for *perceived safety*.
+
+### The Scale of the Problem
+
+| Data | Source |
 |---|---|
-| 1972'de okula yalnız giden 7–8 yaş İngiliz çocuğu: **%80** → 1990'da **%9** | Policy Studies Institute, UK |
-| 1969'da yürüyerek okula giden ABD'li çocuk: **%48** → 2009'da **%13** | National Center for Safe Routes to School |
-| Sabah trafik yükünün **%10–14'ü** ebeveynlerin çocuklarını okula götürmesinden kaynaklanıyor | Safe Routes to School Partnership |
-| ABD'de yılda ortalama **67.124 çocuk** yaya olarak yaralanıyor; **704'ü** hayatını kaybediyor | Children's Safety Network |
-| 16 yaş altı çocuk ölümlerinin **%36'sı** saat 15:00–19:00 arasında — tam okul çıkış saatlerinde | Children's Safety Network |
-| Ebeveynlerin **%46'sı** çocuğunu yürüterek okula göndermeme sebebi: trafik tehlikesi; **%11'i**: suç | CDC, 2018 |
- 
-**Asıl kırılma:** Bu ebeveynlerin elinde somut, gerçek zamanlı, sokak bazında bilgi olsaydı karar vermek çok daha kolay olurdu. Safe Route tam da bunu sağlar.
- 
+| English children aged 7–8 who walked to school alone: **80% in 1972 → 9% in 1990** | Policy Studies Institute, UK |
+| US children walking to school: **48% in 1969 → 13% in 2009** | National Center for Safe Routes to School |
+| **10–14%** of morning traffic is parents driving kids to school | Safe Routes to School Partnership |
+| An average of **67,124 children** are injured as pedestrians each year in the US; **704** die | Children's Safety Network |
+| **36%** of under-16 pedestrian deaths occur between 3–7 PM — peak school dismissal hours | Children's Safety Network |
+| **46%** of parents cite traffic danger as the reason they don't let their child walk to school; **11%** cite crime | CDC, 2018 |
+
+**The real breaking point:** If these parents had concrete, real-time, street-level information, their decision would be far easier. Safe Route provides exactly that.
+
 ---
- 
-## 👥 Kimler İçin?
- 
-### 🧒 Çocuklar — Okul Yolu Artık Gözle Görülür Olabilir
- 
-Çocukların bağımsız hareket özgürlüğü son 50 yılda dramatik biçimde daraldı. Sokaklar daha mı tehlikeli oldu? Belki biraz. Ama asıl sorun **görünmezlik**: ebeveynler tehlikeyi hisseder ama somut, sokak bazında bir bilgiye sahip değildir.
- 
-#### Okul Yolu Senaryosu
- 
-Selin, 10 yaşında. Sabah 08:15'te evden çıkar, okula yürür. Geçtiği bir sokakta kapı önünde duran, birkaç kez seslenen bir yabancıyla karşılaşır.
- 
-**Selin uygulamayı açar ve tek cümle yazar:**
- 
-> *"Okul yolunda bir yabancı kapı önünde bekliyordu, defalarca seslendi."*
- 
-**Arka planda 3 saniyede:**
- 
+
+## 👥 Who It's For
+
+### 🧒 Children — The Walk to School Can Be Made Visible
+
+Children's freedom to move independently has shrunk dramatically over the past 50 years. Are streets more dangerous? Perhaps slightly. But the core problem is **invisibility**: parents feel danger without having concrete, street-level data.
+
+#### School Route Scenario
+
+Selin is 10 years old. She leaves home at 8:15 AM to walk to school. On one street, she encounters a stranger standing in a doorway who calls out to her repeatedly.
+
+**Selin opens the app and writes one sentence:**
+
+> *"A stranger was waiting in a doorway on the school route and kept calling out to me."*
+
+**Behind the scenes, in 3 seconds:**
+
 ```
 Gemma 4 E2B (on-device):
   → category:      "suspicious_behavior"
   → riskLevel:     "medium"
   → timeSensitive: true
-  → explanation:   "Yabancının ısrarcı iletişim girişimi — sabah okul saatinde orta risk"
- 
+  → explanation:   "Persistent contact attempt by stranger — medium risk during morning school hours"
+
 RiskEngine:
-  → O sokağın geohash-7 hücresi kırmızıya döner
-  → surge_factor güncellendi
- 
+  → geohash-7 cell for that street turns red
+  → surge_factor updated
+
 Firestore (< 5s):
-  → Diğer tüm cihazlarda o hücre pulse animasyonu yapar
+  → That cell pulses on all other devices
 ```
- 
-**10 dakika sonra aynı sokaktan geçmek isteyen Ahmet (11 yaşında) ne görür?**
- 
-Haritada o hücre kırmızı. Rota istediğinde:
- 
-- **Gri rota:** En kısa — ama o sokaktan geçiyor
-- **Yeşil rota:** +180m, +2dk — ama o bloktan tamamen kaçınıyor
-"Neden daha güvenli?" butonuna basınca:
- 
-> *"Bu güzergah, bugün sabah şüpheli davranış bildirilen Çiçek Sokak'ı atlıyor. Bildirim 12 dakika önce geldi (gece çarpanı yok, yoğunluk çarpanı: 1.3)."*
- 
-Ahmet o sokaktan geçmez. Neden geçmemesi gerektiğini de bilir.
- 
+
+**10 minutes later, what does Ahmet (age 11) see when he tries to take the same street?**
+
+That cell is red on the map. When he requests a route:
+
+- **Gray route:** Shortest — but it passes through that street
+- **Green route:** +180m, +2 min — but avoids that block entirely
+
+When he taps "Why is this safer?":
+
+> *"This route skips Çiçek Sokak, where a suspicious behavior report was filed this morning. Report came in 12 minutes ago (no night multiplier, density multiplier: 1.3)."*
+
+Ahmet doesn't take that street. And he knows exactly why.
+
 ---
- 
-### 👩 Kadınlar
- 
-Geç saatte yalnız yürürken kaçınılacak güzergahları gerçek zamanlı olarak görür. Taciz veya takip bildirimleri gece çarpanıyla (**×1.5**) otomatik olarak ağırlaştırılır ve komşu hücreler de etkilenir.
- 
-### 👴 Yaşlılar ve Dezavantajlı Gruplar
- 
-Uygulamanın arka planında çalışan risk motoru herhangi bir ML eğitimi gerektirmez — veriler ağ olmasa da SQLite üzerinden local çalışır. Hesap açmak gerekmez, anonim auth otomatik atanır.
- 
-### 🌐 Herkes
- 
-> **"Biri görür, bildirir. Bir sonraki yaya geçmez."**
- 
-Safe Route'un topluluk zinciri budur. Her bildirim, o sokağı kullanan tüm kullanıcılara gerçek zamanlı olarak ulaşır.
- 
+
+### 👩 Women
+
+Real-time visibility of routes to avoid when walking alone at night. Harassment or stalking reports are automatically escalated with a night multiplier (**×1.5**), and neighboring cells are also affected.
+
+### 👴 Elderly & Vulnerable Groups
+
+The risk engine running in the background requires no ML training — data works locally over SQLite even without a network connection. No account needed; anonymous auth is assigned automatically.
+
+### 🌐 Everyone
+
+> **"One person sees it, reports it. The next pedestrian doesn't go there."**
+
+That is Safe Route's community chain. Every report reaches all users on that street in real time.
+
 ---
- 
+
 ## 🎬 Demo
- 
-[▶ 3 dakikalık demo videosu izle](https://youtube.com/...)
- 
-| Risk Haritası | Güvenli vs Kısa Rota | Güvenlik Bildirimi |
+
+[▶ Watch the 3-minute demo video](https://youtube.com/...)
+
+| Risk Map | Safe vs Short Route | Safety Report |
 |:---:|:---:|:---:|
-| ![harita](docs/screenshots/riskmap.png) | ![rota](docs/screenshots/route.png) | ![bildirim](docs/screenshots/reportpage.png) |
-| Hex hücreli heatmap, canlı pulse animasyonu | Yeşil (güvenli) vs gri (kısa), +180m farkı | Tek cümle, ses/fotoğraf, &lt;5s senkronizasyon |
- 
-**Demoda öne çıkan anlar:**
-- Model indirme → uygulama ilk açılış
-- Canlı bildirim gönderimi → diğer cihazda **< 5 saniye** pulse animasyonu
-- Güvenli vs kısa rota karşılaştırması — +180m / +2dk trade-off etiketi
-- "Neden daha güvenli?" 3 katmanlı açıklama ekranı
-- Acil durum butonu → SMS deeplink
+| ![map](docs/screenshots/riskmap.png) | ![route](docs/screenshots/route.png) | ![report](docs/screenshots/reportpage.png) |
+| Hex-cell heatmap, live pulse animation | Green (safe) vs gray (short), +180m difference | One sentence, audio/photo, <5s sync |
+
+**Highlights in the demo:**
+- Model download → first app launch
+- Live report submission → pulse animation on another device **< 5 seconds**
+- Safe vs short route comparison — +180m / +2min trade-off label
+- "Why is this safer?" 3-layer explanation screen
+- Emergency button → SMS deeplink
+
 ---
- 
-## ⚙️ Nasıl Çalışır?
- 
-### Temel Döngü (uçtan uca < 5 saniye)
- 
+
+## ⚙️ How It Works
+
+### The Core Loop (end-to-end < 5 seconds)
+
 ```
-1. Kullanıcı Bildir'e basar → tek cümle yazar
-2. Gemma 4 E2B sınıflandırır on-device → kategori, risk, açıklama
-3. RiskEngine o sokağın hex hücresini yeniden hesaplar
-4. Diğer cihazlar Firestore üzerinden pulse animasyonu alır
+1. User taps Report → writes one sentence
+2. Gemma 4 E2B classifies on-device → category, risk, explanation
+3. RiskEngine recomputes the hex cell for that street
+4. Other devices receive a pulse animation via Firestore
 ```
- 
-### Tam Pipeline
- 
+
+### Full Pipeline
+
 ```
-Kullanıcı bildirimi (1 cümle)          GPS konumu
+User report (1 sentence)               GPS location
         │                                   │
         └──────────────┬────────────────────┘
                        ▼
            ReportsRepository
            SQLite write → status: PENDING
-           [< 100ms — "Rapor alındı" snackbar]
+           [< 100ms — "Report received" snackbar]
                        │
                        ▼
          ┌─────────────────────────────┐
          │   GemmaService.classify     │  ← on-device, ~3s
          │   Gemma 4 E2B               │
-         │   prompts.dart (kilitli)    │
+         │   prompts.dart (locked)     │
          └─────────────┬───────────────┘
                        │
                        ▼
@@ -171,340 +176,343 @@ Kullanıcı bildirimi (1 cümle)          GPS konumu
           ▼                         ▼
   RiskEngine                  SyncService
   recomputeCell(geohash7)     mirror → Firestore
-  risk_cells güncellendi      pulse: true flag
+  risk_cells updated          pulse: true flag
           │                         │
           ▼                         ▼
-  Heatmap güncellendi       Diğer cihazlar
+  Heatmap updated           Other devices
   (1s refresh)              pulse animate (< 5s)
           │
-          │  [rota isteği varsa]
+          │  [if route request pending]
           ▼
   RoutingService.findRoutes(from, to, time)
   ├─ OSM graph → nearestNode snap
   ├─ A* + Yen K-Shortest (K=5)
   ├─ risk_rerank: cost = distance + α × Σ risk
-  └─ GemmaService.summarizeCell [E4B, ~7s, 5dk cache]
+  └─ GemmaService.summarizeCell [E4B, ~7s, 5min cache]
           │
           ▼
      RouteResult
-     shortest (gri) + safest (yeşil)
-     + avoidedCells + 3-katman açıklama
+     shortest (gray) + safest (green)
+     + avoidedCells + 3-layer explanation
 ```
- 
+
 ---
- 
-## 🧠 Gemma 4 Nasıl Kullanılıyor?
- 
-Safe Route, **hot-swap mimarisiyle** iki Gemma 4 edge modeli kullanır. Aynı anda her ikisi de bellekte tutulamaz (Pixel 7, 8 GB RAM); `setActive(spec)` ile gerektiğinde yükleme yapılır.
- 
-| Model | Görev | Gecikme | Sıklık |
+
+## 🧠 How Gemma 4 Is Used
+
+Safe Route uses **two Gemma 4 edge models with a hot-swap architecture**. Both cannot be held in memory simultaneously (Pixel 7, 8 GB RAM); `setActive(spec)` loads whichever is needed on demand.
+
+| Model | Task | Latency | Frequency |
 |---|---|---|---|
-| **Gemma 4 E2B** (~2.58 GB) | Bildirim sınıflandırma | ~3s | Her bildirimde |
-| **Gemma 4 E4B** (~3.65 GB) | Kaçınılan alan özeti | ~7s | Rota başına, 5dk cache |
- 
-### E2B — Bildirim Sınıflandırma
- 
-Her gelen bildirimi yapılandırılmış bir nesneye dönüştürür:
- 
+| **Gemma 4 E2B** (~2.58 GB) | Report classification | ~3s | Every report |
+| **Gemma 4 E4B** (~3.65 GB) | Avoided area summary | ~7s | Per route, 5min cache |
+
+### E2B — Report Classification
+
+Converts every incoming report into a structured object:
+
 ```json
 {
   "category": "harassment",
   "riskLevel": "medium",
   "timeSensitive": true,
   "confidence": 0.87,
-  "explanation": "Kişiyi takip eden iki kişi — akşam erken saatlerinde yüksek risk"
+  "explanation": "Two individuals following someone — high risk in early evening"
 }
 ```
- 
-- `prompts.dart` içindeki sistem prompt **kilitlidir** — eval determinizmi için değiştirilmez
-- `parser.dart` JSON yanıtı parse eder; hata durumunda retry + safe-default
+
+- The system prompt in `prompts.dart` is **locked** — never modified, for eval determinism
+- `parser.dart` parses the JSON response; retry + safe-default on error
 - Format: `.litertlm` container (LiteRT-LM), GPU + CPU fallback
-### E4B — Alan Özeti
- 
-Rota planlamasında kaçınılan hücreleri doğal dille özetler:
- 
-> *"Bu güzergah, bu gece 3 olay bildirilen Barbaros Bulvarı'nı atlıyor."*
- 
-- 5 dakikalık cache: aynı hücre için tekrar tekrar E4B çağrılmaz
-- Hot-swap: E2B unload → E4B load → önbellek süresi dolunca geri
-### Neden On-Device?
- 
-Kişisel güvenlik bildirimleri en hassas verilerden biridir. *"Gece 23:00'de X yakınında takip edildim"* ifadesi konum, saat, rutin ve kırılganlık bilgisi içerir. Bulut çıkarımı — güvenilir bir sağlayıcıyla bile olsa — bu veri için uygun değildir.
- 
-**On-device çıkarım gizliliği politikaya değil, yapıya bağlar.**
- 
-Firestore yalnızca cihazlar arası senkronizasyon içindir. AI inference asla bulutta çalışmaz.
- 
+
+### E4B — Area Summary
+
+Summarizes avoided cells in natural language during route planning:
+
+> *"This route skips Barbaros Bulvarı, where 3 incidents were reported tonight."*
+
+- 5-minute cache: E4B is not called repeatedly for the same cell
+- Hot-swap: E2B unloads → E4B loads → reverts when cache expires
+
+### Why On-Device?
+
+Personal safety reports are among the most sensitive data that exists. *"I was followed near X at 11 PM"* contains location, time, routine, and vulnerability information. Cloud inference — even with a trusted provider — is not appropriate for this data.
+
+**On-device inference ties privacy to architecture, not policy.**
+
+Firestore is only used for device-to-device sync. AI inference never runs in the cloud.
+
 ---
- 
-## 🔍 Saydam Risk Modeli (ML Eğitimi Yok)
- 
-Kasıtlı olarak eğitilmiş bir risk modeli kullanmadık. Her risk skoru kamuya açık, denetlenebilir bir formüldür:
- 
+
+## 🔍 Transparent Risk Model (No ML Training)
+
+We deliberately chose not to use a trained risk model. Every risk score is a publicly auditable formula:
+
 ```
-predicted_risk(hücre, t) = base_risk(hücre) × surge_factor(hücre, t) × time_factor(t)
+predicted_risk(cell, t) = base_risk(cell) × surge_factor(cell, t) × time_factor(t)
 ```
- 
-| Çarpan | Formül | Varsayılan |
+
+| Factor | Formula | Default |
 |---|---|---|
-| `categoryWeight` | şiddet: 1.0 / hırsızlık: 0.8 / taciz: 0.7 / şüpheli: 0.5 / vandalizm: 0.4 / diğer: 0.3 | sabit |
-| `severityWeight` | yüksek: 1.0 / orta: 0.7 / düşük: 0.4 | sabit |
-| `decay` | `exp(−gün_yaşı / 7)` | 7 günlük yarı-ömür |
-| `reputationFor(uid)` | `clamp([0.5, 1.5])` | kullanıcı başına |
-| `surgeFactor` | `1 + min(2.0, son_2s × 0.3)` | maksimum 3.0 |
-| `timeFactor` | `22:00 ≤ t < 05:00` ise **1.5**, diğer: 1.0 | gece çarpanı |
- 
-**Kullanıcı arayüzü bu sayıları aynen gösterir.** Formüle güvenin, bize değil.
- 
-Bu özellikle güvenlik uygulamaları için kritiktir: opak "AI güvenlik skorları" tarafsızlık yanılsaması yaratırken önyargıyı gizler. Açık formüller denetlenebilirdir.
- 
+| `categoryWeight` | violence: 1.0 / theft: 0.8 / harassment: 0.7 / suspicious: 0.5 / vandalism: 0.4 / other: 0.3 | constant |
+| `severityWeight` | high: 1.0 / medium: 0.7 / low: 0.4 | constant |
+| `decay` | `exp(−days_old / 7)` | 7-day half-life |
+| `reputationFor(uid)` | `clamp([0.5, 1.5])` | per-user |
+| `surgeFactor` | `1 + min(2.0, last_2h_count × 0.3)` | max 3.0 |
+| `timeFactor` | `22:00 ≤ t < 05:00` → **1.5**, otherwise 1.0 | night multiplier |
+
+**The user interface shows these numbers as-is.** Trust the formula, not us.
+
+This is especially critical for safety applications: opaque "AI safety scores" create an illusion of neutrality while hiding bias. Open formulas are auditable.
+
 ---
- 
-## 🗺️ Rota Planlama
- 
-### Algoritma
- 
+
+## 🗺️ Route Planning
+
+### Algorithm
+
 ```
 RoutingService.findRoutes(from, to, time)
-  ├─ OsmGraph.nearestNode(from), nearestNode(to)   ← yürünebilir yola snap
-  ├─ YenKShortestPaths(K=5)                         ← A* base + spur path'ler
-  ├─ Tüm adayların geçtiği geohash hücrelerini topla
+  ├─ OsmGraph.nearestNode(from), nearestNode(to)   ← snap to walkable path
+  ├─ YenKShortestPaths(K=5)                         ← A* base + spur paths
+  ├─ Collect geohash cells crossed by all candidates
   ├─ RiskEngine.predictedRisk(cell, time)           ← pre-compute cache
   ├─ RiskRerank: cost = length + α × Σ risk         ← α default 100m
-  ├─ GemmaService.summarizeCell (E4B)               ← top-3 avoided cell
+  ├─ GemmaService.summarizeCell (E4B)               ← top-3 avoided cells
   └─ RouteResult { shortest, safest, avoidedCells, explanation }
 ```
- 
-- **OSM grafiği:** `app/assets/road_graph.bin` (~1.1 MB Beşiktaş yaya ağı), `tools/extract_osm.py` ile osmium'dan üretilir
-- **A\*:** `astar.dart` + Haversine heuristic + özel `MinHeap` — saf Dart, harici bağımlılık yok
-- **Yen K-Shortest:** 5 alternatif yol; `risk_rerank.dart` her birinin maliyetini `mesafe + α × risk` ile yeniden hesaplar
-### 3 Katmanlı Açıklama
- 
-"Neden daha güvenli?" butonuna basıldığında:
- 
-| Katman | İçerik |
+
+- **OSM graph:** `app/assets/road_graph.bin` (~1.1 MB Beşiktaş pedestrian network), generated from osmium via `tools/extract_osm.py`
+- **A\*:** `astar.dart` + Haversine heuristic + custom `MinHeap` — pure Dart, no external dependencies
+- **Yen K-Shortest:** 5 alternative paths; `risk_rerank.dart` recomputes cost for each as `distance + α × risk`
+
+### 3-Layer Explanation
+
+When "Why is this safer?" is tapped:
+
+| Layer | Content |
 |---|---|
-| **1. Rota düzeyi** | E4B özeti + kaçınılan hücre sayısı, gece çarpanı, surge çarpanı, mesafe farkı |
-| **2. Hücre düzeyi** | Herhangi bir kaçınılan alana dokunulduğunda o alanı besleyen topluluk bildirimleri + Gemma'nın nötr açıklaması |
-| **3. Zamansal** | `base × 1.5 gece × 2.0 surge` çarpanları birebir gösterilir |
- 
-Uygulama **"AI öyle düşünüyor ki..."** demez. Sayıları ve modeli doğrudan **alıntılar**.
- 
+| **1. Route level** | E4B summary + number of avoided cells, night multiplier, surge multiplier, distance difference |
+| **2. Cell level** | Tapping any avoided area shows the community reports feeding that cell + Gemma's neutral explanation |
+| **3. Temporal** | `base × 1.5 night × 2.0 surge` multipliers shown verbatim |
+
+The app never says **"AI thinks that..."**. It directly **quotes** the numbers and the model.
+
 ---
- 
-## 🏗️ Mimari
- 
-### Boot Sırası
- 
+
+## 🏗️ Architecture
+
+### Boot Sequence
+
 ```
 1. WidgetsFlutterBinding.ensureInitialized()
-2. GemmaService init       ← mevcut ağırlık var mı kontrol et
+2. GemmaService init       ← check if weights already exist
 3. LocalDb open            ← sqflite migrations
-4. Firebase.initializeApp  ← yoksa skip (graceful)
-5. SeedLoader.ensureSeeded ← ilk açılışta 50 sentetik bildirim yükle
-6. GemmaService.warmUp     ← E2B engine'i sıcak tut
+4. Firebase.initializeApp  ← skip if unavailable (graceful)
+5. SeedLoader.ensureSeeded ← load 50 synthetic reports on first launch
+6. GemmaService.warmUp     ← keep E2B engine warm
 7. runApp(ProviderScope(overrides: [...realProviders...]))
 ```
- 
-### Depolama Katmanı — Çevrimdışı-Önce
- 
+
+### Storage Layer — Offline-First
+
 ```
 ┌────────────────────────────────────┐
-│ SQLite (sqflite) — gerçek kaynak   │   ← tüm write'lar buraya, < 100ms
+│ SQLite (sqflite) — source of truth │   ← all writes here, < 100ms
 │   tables: reports, risk_cells,     │
 │           classifications, sync    │
 └──────────────┬─────────────────────┘
-               │ mirror (async, retry'lı)
+               │ mirror (async, with retry)
                ▼
 ┌────────────────────────────────────┐
-│ Firestore — yalnızca senkronizasyon│   ← cihazlar arası dağıtım
-│ Anonim Auth UID = cihaz başına     │
+│ Firestore — sync only              │   ← cross-device distribution
+│ Anonymous Auth UID = per device    │
 └────────────────────────────────────┘
 ```
- 
-### Bağımlılık Tersine Çevirme — `*Like` Provider Pattern
- 
+
+### Dependency Inversion — `*Like` Provider Pattern
+
 ```
-features/providers.dart   ← Like abstract interface'ler
+features/providers.dart   ← *Like abstract interfaces
                             ReportsRepositoryLike, RiskEngineLike,
                             RoutingServiceLike, GemmaServiceLike...
- 
-app/real_providers.dart   ← Adapter'lar: gerçek sınıfları Like'a uyarla
- 
+
+app/real_providers.dart   ← Adapters: wrap real classes to match Like
+
 main.dart                 ← ProviderScope.overrideWith(...)
 ```
- 
-UI her zaman `*Like` arayüze bağlıdır. Test fixture'lar mock Like döner. Modüller bağımsız evrilir.
- 
-### Acil Durum Butonu
- 
+
+The UI always binds to the `*Like` interface. Test fixtures return mock Likes. Modules evolve independently.
+
+### Emergency Button
+
 ```
 EmergencyAction.trigger()
-  1. LocationService.currentPosition() → anlık konum
-  2. Otomatik classification (Gemma atlanır):
+  1. LocationService.currentPosition() → current location
+  2. Automatic classification (Gemma skipped):
      {category: violence, riskLevel: high, confidence: 1.0}
-  3. ReportsRepository.submitClassified() → doğrudan CLASSIFIED
-  4. EmergencyContactStorage → kayıtlı telefon numarası
+  3. ReportsRepository.submitClassified() → directly CLASSIFIED
+  4. EmergencyContactStorage → saved phone number
   5. SMS deeplink:
-     sms:<phone>?body=Acil durum. Konumum: https://maps.google.com/?q=<lat>,<lng>
-  6. url_launcher → yerleşik SMS uygulaması açılır
+     sms:<phone>?body=Emergency. My location: https://maps.google.com/?q=<lat>,<lng>
+  6. url_launcher → native SMS app opens
 ```
- 
-Kritik durumda inference gecikmesi beklenmez — doğrudan kayıt yapılır.
- 
+
+In a critical situation, inference latency is unacceptable — the report is filed directly.
+
 ---
- 
-## 🛠️ Teknoloji Yığını
- 
-| Katman | Teknoloji |
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
 |---|---|
 | Framework | Flutter 3.41.7 (Dart 3) + Material 3 |
 | On-device AI | Gemma 4 E2B + E4B — flutter_gemma 0.13.6 + MediaPipe LiteRT |
-| Durum yönetimi | Riverpod |
-| Navigasyon (UI) | go_router |
-| Harita | flutter_map + OpenStreetMap + latlong2 |
-| Yer arama | Nominatim (OSM geocoding) |
-| Konum | geolocator |
-| Rota algoritması | Dart A* + Yen K-Shortest + özel MinHeap |
-| Graf kaynağı | osmium-tool (Python) → binary asset |
-| Yerel depolama | sqflite (çevrimdışı-önce) |
-| Senkronizasyon | Firebase Firestore + Anonymous Auth |
+| State management | Riverpod |
+| Navigation (UI) | go_router |
+| Maps | flutter_map + OpenStreetMap + latlong2 |
+| Place search | Nominatim (OSM geocoding) |
+| Location | geolocator |
+| Routing algorithm | Dart A* + Yen K-Shortest + custom MinHeap |
+| Graph source | osmium-tool (Python) → binary asset |
+| Local storage | sqflite (offline-first) |
+| Sync | Firebase Firestore + Anonymous Auth |
 | Code generation | freezed |
-| Test | flutter_test + integration_test (gerçek Pixel 7 inference) |
- 
+| Testing | flutter_test + integration_test (real Pixel 7 inference) |
+
 ---
- 
-## 🚀 Kurulum
- 
-### Gereksinimler
- 
-- **Android Studio Hedgehog (2023.1) veya üzeri**
-- **Flutter SDK** ^3.11.5 (Dart 3) — PATH'te tanımlı olmalı
-- **Android cihaz, 6 GB+ RAM** — Gemma 4 E4B ~4 GB gerektirir (Pixel 7+ önerilir)
-- ~7 GB boş depolama (model ağırlıkları)
-- İlk kurulum için Wi-Fi bağlantısı
-> **Not:** iOS gerçek cihaz gerektirir (Simulator'da MediaPipe GPU desteği yoktur). Web build yalnızca UI smoke test amaçlıdır; Gemma çalışmaz.
- 
-### 1. Android Studio Hazırlığı
- 
-Flutter ve Dart plugin'lerini ekle:
+
+## 🚀 Setup
+
+### Requirements
+
+- **Android Studio Hedgehog (2023.1) or later**
+- **Flutter SDK** ^3.11.5 (Dart 3) — must be on PATH
+- **Android device, 6 GB+ RAM** — Gemma 4 E4B requires ~4 GB (Pixel 7+ recommended)
+- ~7 GB free storage (model weights)
+- Wi-Fi connection for initial setup
+
+> **Note:** iOS requires a real device (MediaPipe GPU is not supported in Simulator). Web build is for UI smoke testing only — Gemma does not run on web.
+
+### 1. Android Studio Setup
+
+Add Flutter and Dart plugins:
 ```
-Settings → Plugins → Marketplace → "Flutter" ara → Install
+Settings → Plugins → Marketplace → search "Flutter" → Install
 ```
-Dart plugin otomatik yüklenir. IDE'yi yeniden başlat.
- 
-### 2. Repoyu Klonla ve Aç
- 
+The Dart plugin installs automatically. Restart the IDE.
+
+### 2. Clone and Open
+
 ```bash
 git clone https://github.com/aybukeyy/saferoute.git
 cd saferoute
 ```
- 
-Android Studio'da **File → Open** → `saferoute/app` klasörünü seç (proje root'u `app/`'dır).
- 
+
+In Android Studio: **File → Open** → select the `saferoute/app` folder (project root is `app/`).
+
 ```bash
-# Bağımlılıkları yükle (Android Studio otomatik tetikler, manuel için:)
+# Install dependencies (Android Studio triggers this automatically; or manually:)
 cd app
 flutter pub get
- 
-# Kurulumu doğrula — tüm işaretler yeşil olmalı
+
+# Verify setup — all checks should be green
 flutter doctor
 ```
- 
-### 3. Manuel Kurulum (zorunlu)
- 
-**Firebase config** — repoda yok (`.gitignore`'da):
+
+### 3. Manual Setup (required)
+
+**Firebase config** — not in repo (`.gitignore`):
 ```bash
 cd app
-flutterfire configure --project=<proje-id>
+flutterfire configure --project=<your-project-id>
 ```
-Bu komut `firebase_options.dart`, `google-services.json`, `GoogleService-Info.plist` üretir.
-Firebase Console'da **Firestore + Anonymous Auth** aktif olmalı.
- 
-**OSM road graph** — repoda yok (`.gitignore`'da):
+This generates `firebase_options.dart`, `google-services.json`, and `GoogleService-Info.plist`.
+In Firebase Console, enable **Firestore + Anonymous Auth**.
+
+**OSM road graph** — not in repo (`.gitignore`):
 ```bash
 cd tools
 pip install -r requirements.txt
 python extract_osm.py
-# → app/assets/road_graph.bin üretilir
+# → generates app/assets/road_graph.bin
 ```
- 
-**Gemma 4 ağırlıkları** — bundle edilmez, ilk açılışta otomatik indirilir (~6 GB toplam):
+
+**Gemma 4 weights** — not bundled, downloaded automatically on first launch (~6 GB total):
 - `gemma-4-e2b.litertlm` (~2.58 GB)
 - `gemma-4-e4b.litertlm` (~3.65 GB)
-İndirme yarıda kesilirse `Range header` ile kaldığı yerden devam eder. "Atla" seçeneğiyle AI özellikleri olmadan harita + heatmap kullanılabilir.
- 
-### 4. Çalıştırma
- 
-Android Studio'da üst bardan device seç → **Run** (`Shift+F10`) veya **Debug** (`Shift+F9`).
- 
-CLI alternatifi:
+
+If the download is interrupted, it resumes via `Range` header. Tapping "Skip" allows the app to run with map + heatmap features only, without AI.
+
+### 4. Run
+
+Select a device in Android Studio's top bar → **Run** (`Shift+F10`) or **Debug** (`Shift+F9`).
+
+CLI alternative:
 ```bash
 cd app
-flutter run              # bağlı cihazda
-flutter run -d chrome    # web (Gemma çalışmaz)
-flutter run --release    # release modu (inference ~2x daha hızlı)
+flutter run              # on connected device
+flutter run -d chrome    # web (Gemma does not run)
+flutter run --release    # release mode (inference ~2x faster)
 ```
- 
-### Yeni Bölge Eklemek
- 
+
+### Adding a New Region
+
 ```bash
 cd tools
 python extract_osm.py --bbox <min_lon>,<min_lat>,<max_lon>,<max_lat>
- 
-# Ardından güncelle:
+
+# Then update:
 # app/assets/road_graph.bin
 # app/assets/seed_reports.json
 # app/lib/features/map/map_screen.dart → kDefaultMapCenter
 ```
- 
-### Sorun Giderme
- 
-| Sorun | Çözüm |
+
+### Troubleshooting
+
+| Issue | Fix |
 |---|---|
-| `flutter doctor` Android toolchain hatalı | Android Studio → SDK Manager → SDK Tools → "Android SDK Command-line Tools" yükle |
+| `flutter doctor` Android toolchain error | Android Studio → SDK Manager → SDK Tools → install "Android SDK Command-line Tools" |
 | `Gradle build failed` | `cd app/android && ./gradlew clean` → Android Studio "Sync Project with Gradle Files" |
-| `Firebase config not found` | `flutterfire configure` çalıştırılmamış — yukarıdaki Manuel Kurulum bölümüne bak |
-| Gemma model yüklenmiyor | İnternet bağlantısı + en az ~7 GB boş disk gerekli |
-| `road_graph.bin not found` | `python tools/extract_osm.py` çalıştır |
- 
+| `Firebase config not found` | `flutterfire configure` has not been run — see Manual Setup above |
+| Gemma model fails to load | Internet connection + at least ~7 GB free disk space required |
+| `road_graph.bin not found` | Run `python tools/extract_osm.py` |
+
 ---
- 
- 
-## 📊 Değerlendirme
- 
-Sınıflandırma doğruluğu 100 bildirimlik eval seti üzerinde, **gerçek donanımda (Pixel 7)** ölçüldü. Koşum takımı için: `app/eval/`
- 
-| Metrik | E2B |
+
+## 📊 Evaluation
+
+Classification accuracy was measured on a 100-report eval set on **real hardware (Pixel 7)**. Test harness: `app/eval/`
+
+| Metric | E2B |
 |---|---|
-| Kategori doğruluğu | %XX |
-| Risk seviyesi doğruluğu | %XX |
-| Ortalama çıkarım gecikmesi | ~3.1s |
-| Uçtan uca (bildirim → diğer cihaz pulse) | < 5s |
- 
-> Eval veri seti ve koşum takımı repoda açıktır — sonuçlar tamamen tekrarlanabilir.
- 
+| Category accuracy | XX% |
+| Risk level accuracy | XX% |
+| Average inference latency | ~3.1s |
+| End-to-end (report → other device pulse) | < 5s |
+
+> The eval dataset and test harness are open in the repo — results are fully reproducible.
+
 ---
- 
-## ⚠️ Bilinen Sınırlamalar
- 
-| Sınırlama | Durum |
+
+## ⚠️ Known Limitations
+
+| Limitation | Status |
 |---|---|
-| Kapsam Beşiktaş, İstanbul ile sınırlı | Yeni bölge: `tools/extract_osm.py --bbox <bbox>` |
-| E2B↔E4B geçişinde ~2s soğuk başlatma | 5dk E4B cache çağrıyı seyreltir |
-| iOS Simulator'da Gemma çalışmaz | Gerçek iPhone gerekli |
-| Firestore hız sınırı yalnızca istemci tarafı | Sunucu tarafı hackathon sonrasına planlandı |
-| Kullanıcı itibarı güncellemesi read-only | Cloud Functions hackathon sonrasına planlandı |
-| APK yeniden kurulumunda model tekrar indirilir | Geçici çözüm: emülatör snapshot |
-| Web build'de Gemma çalışmaz | Yalnızca UI smoke test amaçlı |
- 
+| Coverage limited to Beşiktaş, Istanbul | New region: `tools/extract_osm.py --bbox <bbox>` |
+| ~2s cold start on E2B↔E4B swap | 5min E4B cache throttles calls |
+| Gemma does not run in iOS Simulator | Real iPhone required |
+| Firestore rate limiting is client-side only | Server-side planned post-hackathon |
+| User reputation update is read-only | Cloud Functions planned post-hackathon |
+| Model re-downloads on APK reinstall | Workaround: emulator snapshot |
+| Gemma does not run in web build | For UI smoke testing only |
+
 ---
- 
- 
+
 <div align="center">
-Daha güvenli sokaklar için ❤️ ile yapıldı
- 
-**Hackathon projesi** · [GitHub](https://github.com/aybukeyy/saferoute) · [Demo Videosu](https://youtube.com/...) · [`SYSTEM.md`](SYSTEM.md)
- 
+
+Built with ❤️ for safer streets
+
+**Hackathon project** · [GitHub](https://github.com/aybukeyy/saferoute) · [Demo Video](https://youtube.com/...) · [`SYSTEM.md`](SYSTEM.md)
+
 </div>
- 
